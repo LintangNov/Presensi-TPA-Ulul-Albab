@@ -283,7 +283,7 @@ async def toggle_student(request: Request, student_id: int):
     return RedirectResponse("/admin/santri", status_code=303)
 
 
-@router.post("/admin/santri/{student_id}/daftar-kartu")
+@router.post("/api/admin/santri/{student_id}/daftar-kartu")
 async def register_card(request: Request, student_id: int):
     local_only(request)
     payload = RegisterCardRequest.model_validate(await request.json())

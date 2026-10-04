@@ -45,7 +45,7 @@
     registerUid.value = "";
     if (!uid) return;
     try {
-      const response = await fetch(`/admin/santri/${registerStudentId}/daftar-kartu`, {
+      const response = await fetch(`/api/admin/santri/${registerStudentId}/daftar-kartu`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({uid}),
