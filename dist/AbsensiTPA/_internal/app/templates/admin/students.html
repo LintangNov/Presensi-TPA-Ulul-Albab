@@ -12,9 +12,53 @@
 {% for student in students %}
 <tr><td>{{ student.nomor_urut or "-" }}</td><td>{{ student.nama }}</td><td>{{ student.rfid_uid or "Belum dipasangkan" }}</td><td>{{ "Aktif" if student.aktif else "Tidak aktif" }}</td><td>
   <details><summary>Edit</summary><form method="post" action="/admin/santri/{{ student.id }}"><label>Nama <input name="nama" value="{{ student.nama }}" required></label><label>Nomor urut <input name="nomor_urut" type="number" value="{{ student.nomor_urut or '' }}"></label>{% for field in fields %}<label>{{ field.field_label }} <input name="{{ field.field_key }}" value="{{ student.extra_data.get(field.field_key, '') }}"></label>{% endfor %}<button type="submit">Simpan perubahan</button></form></details>
-  <form method="post" action="/admin/santri/{{ student.id }}/daftar-kartu"><button type="submit">Daftarkan Kartu</button></form>
+  <button type="button" data-register-student="{{ student.id }}" data-register-name="{{ student.nama }}">Daftarkan Kartu</button>
   <form method="post" action="/admin/santri/{{ student.id }}/aktif"><button type="submit">{{ "Nonaktifkan" if student.aktif else "Aktifkan" }}</button></form>
 </td></tr>
 {% endfor %}</tbody></table>
-<div hx-get="/admin/registrasi-status" hx-trigger="every 2s" hx-swap="innerHTML"></div>
+<dialog id="register-dialog">
+  <form method="dialog"><button aria-label="Tutup">Tutup</button></form>
+  <h3>Daftarkan Kartu</h3>
+  <p id="register-student-name"></p>
+  <input id="register-uid" autocomplete="off" aria-label="Kartu RFID" autofocus>
+  <p id="register-message" role="status">Tempelkan kartu pada reader USB.</p>
+</dialog>
+<script>
+  const registerDialog = document.querySelector("#register-dialog");
+  const registerUid = document.querySelector("#register-uid");
+  const registerMessage = document.querySelector("#register-message");
+  let registerStudentId;
+  document.querySelectorAll("[data-register-student]").forEach((button) => {
+    button.addEventListener("click", () => {
+      registerStudentId = button.dataset.registerStudent;
+      document.querySelector("#register-student-name").textContent = button.dataset.registerName;
+      registerUid.value = "";
+      registerMessage.textContent = "Tempelkan kartu pada reader USB.";
+      registerDialog.showModal();
+      registerUid.focus();
+    });
+  });
+  registerUid.addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    const uid = registerUid.value;
+    registerUid.value = "";
+    if (!uid) return;
+    try {
+      const response = await fetch(`/api/admin/santri/${registerStudentId}/daftar-kartu`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({uid}),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || "Kartu tidak dapat didaftarkan.");
+      window.alert(`Kartu ${result.uid} berhasil terdaftar untuk ${result.nama}.`);
+      registerMessage.textContent = `Kartu terakhir: ${result.uid}. Tempelkan kartu berikutnya.`;
+      registerUid.focus();
+    } catch (error) {
+      registerMessage.textContent = error.message;
+      registerUid.focus();
+    }
+  });
+</script>
 {% endblock %}
