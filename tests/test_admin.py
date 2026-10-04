@@ -1,6 +1,8 @@
 import asyncio
 from datetime import datetime
 
+import pytest
+
 from app.db import connect
 from app.services.attendance import AttendanceService
 from app.services.students import StudentService
@@ -21,6 +23,19 @@ def test_student_and_custom_field_crud(tmp_path):
     students.update_field(field_id, "Wali", 1)
     students.set_field_active(field_id, False)
     assert students.fields()[0]["aktif"] == 0
+
+
+def test_direct_card_registration_normalizes_and_rejects_duplicate(tmp_path):
+    students = StudentService(tmp_path / "register.db")
+    first = students.save_student(None, "Alya", 1, {})
+    second = students.save_student(None, "Bima", 2, {})
+
+    result = students.register_card(first, "  card-01\r\n")
+
+    assert result["uid"] == "CARD-01"
+    assert students.get_student(first)["rfid_uid"] == "CARD-01"
+    with pytest.raises(ValueError, match="sudah dipakai"):
+        students.register_card(second, "CARD-01")
 
 
 def test_end_to_end_registration_tap_and_today_data(tmp_path):
@@ -71,8 +86,9 @@ def _run_asgi(app, path, client):
 
 
 def test_admin_routes_are_localhost_only():
-    from app.main import app
+    from app.main import SERVER_HOST, app
 
+    assert SERVER_HOST == "127.0.0.1"
     assert _run_asgi(app, "/admin", "192.168.1.50") == 403
     assert _run_asgi(app, "/api/admin/status", "192.168.1.50") == 403
     assert _run_asgi(app, "/admin", "127.0.0.1") == 200

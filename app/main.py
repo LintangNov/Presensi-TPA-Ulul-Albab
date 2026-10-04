@@ -5,7 +5,6 @@ import logging
 from datetime import datetime
 from typing import Any
 
-import qrcode
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -23,14 +22,13 @@ from app.runtime import (
 )
 
 logger = configure_logging()
+SERVER_HOST = "127.0.0.1"
 
 app = FastAPI(title="Absensi TPA")
 templates = Jinja2Templates(directory=str(RESOURCE_DIR / "app" / "templates"))
 app.mount("/static", StaticFiles(directory=str(RESOURCE_DIR / "app" / "static")), name="static")
-last_ping: dict[str, Any] = {"at": None, "client_id": None}
 attendance = AttendanceService(DB_PATH)
 app.state.templates = templates
-app.state.last_ping = last_ping
 app.include_router(admin_router)
 app.state.backup_task = None
 
@@ -69,8 +67,6 @@ async def scan_page(request: Request) -> HTMLResponse:
 
 @app.get("/api/ping")
 async def ping(request: Request) -> dict[str, Any]:
-    client_id = request.headers.get("X-Client-ID", "scanner-tanpa-id")
-    last_ping.update({"at": local_time(), "client_id": client_id})
     return {"ok": True, "server_time": local_time()}
 
 
@@ -121,6 +117,6 @@ if __name__ == "__main__":
 
     uvicorn.run(
         app,
-        host="0.0.0.0",
+        host=SERVER_HOST,
         port=int(os.environ.get("ABSENSI_PORT", "8000")),
     )

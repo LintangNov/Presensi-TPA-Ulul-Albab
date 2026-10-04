@@ -7,20 +7,22 @@ from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from pydantic import BaseModel
 
 from app.db import connect
-from app.network_utils import get_private_candidates, is_local_url
-from app.services.attendance import AttendanceService
 from app.services.students import StudentService
 from app.services.excel_io import export_workbook, preview_students, student_template
 from app.services.reports import ReportService
 from app.runtime import DB_PATH, backup_database, last_backup, schedule_shutdown
 
-attendance = AttendanceService(DB_PATH)
 students = StudentService(DB_PATH)
 reports = ReportService(DB_PATH)
 router = APIRouter()
 import_previews: dict[str, dict[str, Any]] = {}
+
+
+class RegisterCardRequest(BaseModel):
+    uid: str
 
 
 def local_only(request: Request) -> None:
@@ -64,61 +66,11 @@ def today_data() -> dict[str, Any]:
 @router.get("/admin", response_class=HTMLResponse)
 async def dashboard(request: Request):
     local_only(request)
-    detected = get_private_candidates()
-    port = request.url.port or 8000
-    mode1 = next((item for item in detected if item["label"] == "Mode 1 Wi-Fi TPA"), None)
-    mode2 = next((item for item in detected if item["label"] == "Mode 2 Hotspot Laptop"), None)
-    modes = [
-        {
-            "label": "Mode 1 Wi-Fi TPA",
-            "adapter": mode1["adapter"] if mode1 else "",
-            "ip": mode1["ip"] if mode1 else None,
-            "url": f"http://{mode1['ip']}:{port}/scan" if mode1 else None,
-        },
-        {
-            "label": "Mode 2 Hotspot Laptop",
-            "adapter": mode2["adapter"] if mode2 else "",
-            "ip": mode2["ip"] if mode2 else None,
-            "url": f"http://{mode2['ip']}:{port}/scan" if mode2 else None,
-        },
-    ]
-    others = [
-        {**item, "url": f"http://{item['ip']}:{port}/scan"}
-        for item in detected
-        if item not in (mode1, mode2)
-    ]
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="admin/dashboard.html",
-        context=context(
-            request,
-            title="Hubungkan HP",
-            candidates=modes,
-            others=others,
-            last_ping=request.app.state.last_ping,
-            now=datetime.now().astimezone(),
-        ),
+        context=context(request, title="Dashboard", **today_data()),
     )
-
-
-@router.post("/admin/jaringan/segarkan")
-async def refresh_network(request: Request):
-    local_only(request)
-    return RedirectResponse("/admin", status_code=303)
-
-
-@router.get("/admin/qr.png")
-async def qr(request: Request, url: str):
-    local_only(request)
-    if not is_local_url(url):
-        raise HTTPException(400, "URL QR tidak valid.")
-    import io
-    import qrcode
-    from fastapi.responses import Response
-
-    output = io.BytesIO()
-    qrcode.make(url).save(output, format="PNG")
-    return Response(output.getvalue(), media_type="image/png")
 
 
 @router.get("/admin/hari-ini", response_class=HTMLResponse)
@@ -334,18 +286,13 @@ async def toggle_student(request: Request, student_id: int):
 @router.post("/admin/santri/{student_id}/daftar-kartu")
 async def register_card(request: Request, student_id: int):
     local_only(request)
-    attendance.set_registration(student_id)
-    return RedirectResponse("/admin/santri", status_code=303)
-
-
-@router.get("/admin/registrasi-status", response_class=HTMLResponse)
-async def registration_status(request: Request):
-    local_only(request)
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="admin/registration_status.html",
-        context=context(request, **students.registration_status()),
-    )
+    payload = RegisterCardRequest.model_validate(await request.json())
+    try:
+        return students.register_card(student_id, payload.uid)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
 
 
 @router.get("/admin/fields", response_class=HTMLResponse)

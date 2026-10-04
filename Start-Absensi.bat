@@ -10,6 +10,7 @@ for /l %%P in (8000,1,8010) do (
 if defined PORT (
   echo Absensi TPA sudah berjalan di port !PORT!.
   start "" "http://127.0.0.1:!PORT!/admin"
+  start "" msedge.exe --app="http://127.0.0.1:!PORT!/scan"
   exit /b 0
 )
 
@@ -29,7 +30,7 @@ if exist "AbsensiTPA.exe" (
 ) else if exist "dist\AbsensiTPA\AbsensiTPA.exe" (
   start "Absensi TPA" /min "%~dp0dist\AbsensiTPA\AbsensiTPA.exe"
 ) else if exist ".venv\Scripts\python.exe" (
-  start "Absensi TPA" /min ".venv\Scripts\python.exe" -m uvicorn app.main:app --host 0.0.0.0 --port !PORT!
+  start "Absensi TPA" /min ".venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port !PORT!
 ) else (
   echo Aplikasi belum dikemas dan virtual environment tidak ditemukan.
   echo Salin folder dist\AbsensiTPA dari komputer pembuat aplikasi.
@@ -48,3 +49,4 @@ exit /b 1
 :ready
 echo Absensi TPA berjalan di http://127.0.0.1:!PORT!
 start "" "http://127.0.0.1:!PORT!/admin"
+start "" msedge.exe --app="http://127.0.0.1:!PORT!/scan"
