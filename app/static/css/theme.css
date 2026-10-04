@@ -67,6 +67,107 @@ html {
   background: var(--primary);
 }
 
+.admin-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.admin-main > h2,
+.admin-main > h3 {
+  color: var(--text);
+}
+
+.admin-main > form,
+.admin-main > section,
+.admin-main > table,
+.admin-main > details,
+.admin-main > .notice {
+  margin-block: 1rem;
+}
+
+.admin-main > form:not(.report-filters):not(.manual-form) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 1rem;
+}
+
+.admin-main form label {
+  display: grid;
+  gap: .35rem;
+}
+
+.admin-main details {
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.admin-main details > form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.admin-main section,
+.admin-main .card {
+  padding: 1.25rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.summary-grid article {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.summary-grid strong {
+  color: var(--text);
+  font-size: 2rem;
+}
+
+.report-filters,
+.manual-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: end;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.manual-form button,
+.report-filters button {
+  width: 100%;
+}
+
+dialog {
+  max-width: 34rem;
+  width: calc(100% - 2rem);
+  padding: 1.5rem;
+  color: var(--text);
+}
+
+dialog::backdrop {
+  background: rgba(43, 42, 38, .25);
+}
+
+dialog form[method="dialog"] {
+  display: flex;
+  justify-content: flex-end;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -199,6 +300,70 @@ tbody tr:hover {
 .error { background: var(--error); }
 .info { background: var(--info); }
 .inactive { background: var(--inactive); }
+
+/* The scanner stays light on PC; semantic colors carry the feedback. */
+.scanner {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.scanner main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.scanner .status {
+  background: var(--info);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.scanner .status.connected {
+  background: var(--success);
+}
+
+.scanner .hint,
+.scanner li {
+  color: var(--text-muted);
+}
+
+.scanner li {
+  border-bottom-color: var(--border);
+}
+
+.scanner .feedback {
+  color: var(--text);
+  border: 0;
+}
+
+.scanner .feedback.green { background: var(--success); }
+.scanner .feedback.yellow { background: var(--warning); }
+.scanner .feedback.red { background: var(--error); }
+.scanner .feedback.blue { background: var(--info); }
+.scanner .feedback.orange { background: var(--inactive); }
+
+.scanner .feedback strong::before,
+.scanner .focus-warning strong::before {
+  display: inline-block;
+  margin-right: .6rem;
+}
+
+.scanner .feedback.green strong::before { content: "[OK]"; }
+.scanner .feedback.yellow strong::before { content: "[!]"; }
+.scanner .feedback.red strong::before { content: "[X]"; }
+.scanner .feedback.blue strong::before { content: "[i]"; }
+.scanner .feedback.orange strong::before { content: "[!]"; }
+
+.scanner .focus-warning {
+  color: var(--text);
+  background: var(--error);
+  border: 2px solid var(--text);
+}
+
+.scanner .focus-warning strong::before {
+  content: "[X]";
+}
 
 .print-page {
   background: #fff;
