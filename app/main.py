@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from datetime import datetime
 from typing import Any
 
@@ -66,7 +65,7 @@ async def scan_page(request: Request) -> HTMLResponse:
 
 
 @app.get("/api/ping")
-async def ping(request: Request) -> dict[str, Any]:
+async def ping() -> dict[str, Any]:
     return {"ok": True, "server_time": local_time()}
 
 
