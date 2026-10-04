@@ -2,12 +2,16 @@
 {% block content %}
 <h2>Data Santri</h2>
 <form method="get" action="/admin/santri"><input name="q" value="{{ search }}" placeholder="Cari nama atau nomor"><button type="submit">Cari</button></form>
-<details open><summary><strong>Tambah santri</strong></summary>
+<p class="notice">Tambahkan santri terlebih dahulu. Setelah tersimpan, tombol <strong>Daftarkan Kartu</strong> tersedia pada baris santri tersebut.</p>
+<details id="tambah-santri" open><summary><strong>Tambah santri</strong></summary>
 <form method="post" action="/admin/santri">
   <label>Nama <input name="nama" required></label><label>Nomor urut <input name="nomor_urut" type="number"></label>
   {% for field in fields %}<label>{{ field.field_label }} <input name="{{ field.field_key }}"></label>{% endfor %}
   <button type="submit">Simpan santri</button>
 </form></details>
+{% if not students %}
+<p class="notice">Belum ada data santri. Simpan santri baru di bagian <a href="#tambah-santri">Tambah santri</a> untuk mulai mendaftarkan kartu.</p>
+{% endif %}
 <table><thead><tr><th>No</th><th>Nama</th><th>RFID</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>
 {% for student in students %}
 <tr><td>{{ student.nomor_urut or "-" }}</td><td>{{ student.nama }}</td><td>{{ student.rfid_uid or "Belum dipasangkan" }}</td><td>{{ "Aktif" if student.aktif else "Tidak aktif" }}</td><td>
