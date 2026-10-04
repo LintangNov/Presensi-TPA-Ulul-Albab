@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h2>Hubungkan HP</h2>
+<p>Scan QR yang sesuai dengan jaringan yang digunakan HP.</p>
+{% set connected = last_ping.at and (now.timestamp() - now.fromisoformat(last_ping.at).timestamp()) < 15 %}
+<p class="connection-box {% if connected %}good{% endif %}">
+  {% if connected %}HP terhubung. Ping terakhir: {{ last_ping.at }}
+  {% else %}HP belum terhubung dalam 15 detik terakhir.{% endif %}
+</p>
+{% if not connected and candidates %}
+<p class="notice">Jika QR sudah discan tetapi HP belum terhubung, coba <strong>Mode 2: Hotspot Laptop</strong>.</p>
+{% endif %}
+<form method="post" action="/admin/jaringan/segarkan"><button type="submit">Segarkan IP</button></form>
+<div class="network-grid">
+{% for candidate in candidates %}
+  <article>
+    <h3>{{ candidate.label }}</h3>
+    {% if candidate.ip %}
+      <p>Adapter: {{ candidate.adapter }}</p>
+      <img class="qr" src="/admin/qr.png?url={{ candidate.url | urlencode }}" alt="QR untuk {{ candidate.url }}">
+      <p><code>{{ candidate.url }}</code></p>
+      <p>Scan QR ini dengan kamera HP.</p>
+    {% elif candidate.label == "Mode 2 Hotspot Laptop" %}
+      <p>Hotspot belum menyala. Nyalakan hotspot dulu lalu klik Segarkan IP.</p>
+    {% else %}
+      <p>Wi-Fi TPA belum terdeteksi. Sambungkan laptop ke Wi-Fi TPA lalu klik Segarkan IP.</p>
+    {% endif %}
+  </article>
+{% endfor %}
+</div>
+{% if others %}
+<details><summary>IP lokal lainnya</summary>{% for candidate in others %}<p><code>{{ candidate.url }}</code> ({{ candidate.adapter }})</p>{% endfor %}</details>
+{% endif %}
+{% endblock %}

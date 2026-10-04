@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h2>Pengaturan Kolom Tambahan</h2>
+<section>
+<h3>Backup database</h3>
+<p>Backup terakhir: <strong>{{ backup_terakhir or "Belum pernah" }}</strong></p>
+<form method="post" action="/admin/backup"><button type="submit">Cadangkan sekarang</button></form>
+<p>Backup otomatis dibuat saat aplikasi mulai dan setiap 24 jam. Tiga puluh salinan terbaru disimpan di <code>data/backup</code>.</p>
+</section>
+<section>
+<h3>Operasional</h3>
+<form method="post" action="/admin/matikan" onsubmit="return confirm('Matikan aplikasi sekarang?')"><button type="submit">Matikan Aplikasi</button></form>
+</section>
+<form method="post" action="/admin/fields"><label>Nama kolom <input name="label" placeholder="Contoh: Nama Orang Tua" required></label><label>Urutan <input name="urutan" type="number" value="0"></label><button type="submit">Tambah kolom</button></form>
+<table><thead><tr><th>Nama</th><th>Kunci</th><th>Urutan</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>{% for field in fields %}<tr><td><form method="post" action="/admin/fields/{{ field.id }}"><input name="label" value="{{ field.field_label }}"></td><td>{{ field.field_key }}</td><td><input name="urutan" type="number" value="{{ field.urutan }}"></td><td>{{ "Aktif" if field.aktif else "Tidak aktif" }}</td><td><button type="submit">Simpan</button></form>{% if field.aktif %}<form method="post" action="/admin/fields/{{ field.id }}/nonaktif"><button type="submit">Nonaktifkan</button></form>{% endif %}</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

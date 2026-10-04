@@ -1,0 +1,21 @@
+2026-10-04 12:34:21,042 INFO Tap diterima dari 127.0.0.1 (panjang=9)
+2026-10-04 12:34:31,499 INFO Tap diterima dari 127.0.0.1 (panjang=12)
+2026-10-04 12:55:20,421 INFO Tap diterima dari 192.168.1.196 (panjang=10)
+2026-10-04 12:56:54,453 INFO Tap diterima dari 192.168.1.196 (panjang=10)
+2026-10-04 13:00:36,439 INFO Tap diterima dari 192.168.1.198 (panjang=10)
+2026-10-04 13:03:14,367 INFO Tap diterima dari 192.168.137.180 (panjang=10)
+2026-10-04 13:06:31,837 INFO Tap diterima dari 192.168.137.180 (panjang=10)
+2026-10-04 13:06:38,547 INFO Tap diterima dari 192.168.137.180 (panjang=10)
+2026-10-04 13:06:50,389 INFO Tap diterima dari 192.168.137.180 (panjang=10)
+2026-10-04 13:07:03,770 INFO Tap diterima dari 127.0.0.1 (panjang=16)
+2026-10-04 13:07:25,328 INFO Tap tidak_dikenal dari 127.0.0.1
+2026-10-04 13:07:25,458 INFO Tap tidak_dikenal dari 127.0.0.1
+2026-10-04 13:11:16,976 INFO Tap tidak_dikenal dari 127.0.0.1
+2026-10-04 13:11:40,479 INFO Tap tidak_dikenal dari 127.0.0.1
+2026-10-04 13:12:08,573 INFO Tap berhasil dari 127.0.0.1
+2026-10-04 13:12:15,604 INFO Tap duplikat dari 127.0.0.1
+2026-10-04 13:12:21,980 INFO Tap tidak_aktif dari 127.0.0.1
+2026-10-04 13:12:33,943 INFO Tap registrasi dari 127.0.0.1
+2026-10-04 13:12:45,237 INFO Tap uid_terpakai dari 127.0.0.1
+2026-10-04 13:12:53,942 INFO Tap registrasi dari 127.0.0.1
+2026-10-04 13:12:54,074 INFO Tap registrasi dari 127.0.0.1

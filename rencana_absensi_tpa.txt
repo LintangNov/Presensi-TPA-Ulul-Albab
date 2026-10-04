@@ -1,0 +1,505 @@
+================================================================================
+ RENCANA PENGEMBANGAN SISTEM ABSENSI RFID TPA (LOKAL & OFFLINE) - VERSI 2
+ Dokumen ini adalah spesifikasi lengkap untuk AI agent pengembang.
+================================================================================
+
+0. CARA KERJA AGENT (BACA DULU)
+--------------------------------------------------------------------------------
+- Kerjakan per TAHAP sesuai roadmap (Bagian 14). Setelah satu tahap selesai,
+  jalankan tes, ringkas hasilnya, lalu minta konfirmasi sebelum lanjut.
+- Pengguna akhir adalah ibu-ibu pengurus TPA (orang awam). Semua teks di UI,
+  pesan error, dan panduan HARUS dalam Bahasa Indonesia yang sederhana.
+  Jangan tampilkan stack trace atau istilah teknis ke pengguna.
+- Prioritaskan KESEDERHANAAN dan KEANDALAN di atas fitur tambahan.
+- Jangan menambah dependensi di luar daftar tanpa alasan kuat.
+- Seluruh aset frontend (JS/CSS) disimpan LOKAL di folder static/. DILARANG
+  memakai CDN atau request ke internet, karena sistem berjalan 100% offline.
+- Jika ada keputusan desain yang ambigu, pilih opsi paling sederhana dan catat
+  asumsinya di README_DEV.md.
+
+
+1. KONTEKS & TUJUAN
+--------------------------------------------------------------------------------
+Sistem absensi santri TPA berbasis kartu RFID.
+- Tempat absensi (meja scan) dan kantor admin berjarak cukup jauh, sehingga
+  reader TIDAK bisa dicolok langsung ke laptop.
+- Perangkat scanner : HP Android (RAM 2GB) + kabel OTG + USB RFID reader
+  (tipe HID/keyboard emulator). Reader mengetik UID kartu lalu menekan Enter.
+- Perangkat admin   : Laptop Windows milik TPA (tersambung ke Wi-Fi).
+- Jaringan          : Offline total (tanpa internet). Tersedia router Wi-Fi TPA,
+                      tetapi pengembang TIDAK punya akses ke pengaturan router.
+- Karena akses router tidak ada, IP laptop bisa berubah -> HP dihubungkan
+  lewat QR code dinamis yang dibuat admin setiap awal sesi.
+
+
+2. TECH STACK (FINAL)
+--------------------------------------------------------------------------------
+Backend (satu proses tunggal)
+- Python 3.11+ dan FastAPI, dijalankan dengan Uvicorn (host 0.0.0.0, port 8000)
+- Jinja2 untuk template HTML sisi server
+- python-multipart (upload form/file)
+- SQLite (modul bawaan sqlite3, WAL mode). Boleh pakai SQL langsung, tanpa ORM
+  berat.
+- openpyxl untuk export DAN import Excel (.xlsx). JANGAN pakai pandas.
+- qrcode[pil] untuk generate QR
+- psutil (opsional, untuk mendaftar adapter jaringan dan IP)
+
+Frontend admin (laptop)
+- HTML dari Jinja2 + HTMX (file lokal) + Pico.css (file lokal, atau CSS buatan
+  sendiri yang sederhana). Tanpa Node, tanpa build step, tanpa framework JS.
+- "Real-time" memakai HTMX polling (hx-trigger="every 3s"), bukan WebSocket.
+
+Frontend scanner (HP)
+- HTML + JavaScript biasa (vanilla) + NoSleep.js (file lokal)
+- Wake Lock API native TIDAK jalan di HTTP biasa, jadi gunakan NoSleep.js
+  (aktifkan lewat klik tombol "Mulai Sesi").
+
+Packaging
+- PyInstaller mode folder (onedir) agar pengguna tidak perlu menginstal Python.
+- Alternatif jika PyInstaller bermasalah: embedded Python + folder + .bat.
+
+
+3. ARSITEKTUR UMUM
+--------------------------------------------------------------------------------
+[USB RFID Reader] -OTG-> [HP Android: halaman /scan di Chrome]
+                              |
+                              | HTTP lewat Wi-Fi (jaringan TPA ATAU hotspot laptop)
+                              v
+                [Laptop Windows: FastAPI :8000 + SQLite]
+                              |
+                    [Browser laptop: /admin]
+
+Satu aplikasi melayani dua area:
+- AREA PUBLIK (bisa diakses dari jaringan) : /scan, /api/tap, /api/ping, /static
+- AREA ADMIN (HANYA dari laptop sendiri)   : /admin/*, /api/admin/*
+
+Aturan keamanan admin:
+- Buat middleware/dependency: tolak (403, halaman ramah "Halaman ini hanya bisa
+  dibuka dari laptop admin") semua request ke /admin* dan /api/admin* jika
+  request.client.host BUKAN 127.0.0.1 atau ::1.
+- Pastikan tidak ada proxy yang membuat semua request tampak dari localhost.
+- Data santri tidak boleh bisa dibaca dari HP atau perangkat lain di Wi-Fi.
+  (Respons /api/tap hanya boleh mengembalikan nama santri yang bersangkutan.)
+
+
+4. MODE JARINGAN (DUA OPSI)
+--------------------------------------------------------------------------------
+Aplikasi mendukung dua mode jaringan. Server selalu bind 0.0.0.0 sehingga
+bekerja di kedua mode tanpa konfigurasi. Yang berbeda hanya IP yang ditampilkan
+di QR dan panduan di layar admin.
+
+MODE 1 - Wi-Fi TPA
+- Laptop dan HP sama-sama tersambung ke Wi-Fi router TPA.
+- IP laptop didapat dari router (DHCP) dan bisa berubah -> QR discan ulang
+  di awal sesi bila perlu.
+- RISIKO: router bisa mengaktifkan "AP/Client Isolation" sehingga HP tidak bisa
+  mengakses laptop. Halaman admin harus menyediakan tombol "Tes Koneksi"
+  (lihat Bagian 8) dan pesan saran: "Jika HP tidak bisa terhubung, coba Mode 2".
+
+MODE 2 - Hotspot Laptop
+- Laptop mengaktifkan Windows Mobile Hotspot (Settings > Network & Internet >
+  Mobile hotspot). HP tersambung ke hotspot itu.
+- IP laptop umumnya 192.168.137.1 (stabil).
+- Laptop tidak tersambung internet/Wi-Fi TPA saat mode ini (tidak masalah,
+  sistem offline).
+- Panduan di layar admin harus menyertakan: cara menyalakan hotspot, dan
+  pengingat mematikan opsi "Power saving" hotspot agar tidak mati sendiri
+  (Settings > Mobile hotspot > Power saving).
+- Agent TIDAK perlu mengotomasi hotspot lewat kode. Cukup panduan bergambar.
+
+Deteksi IP (modul network_utils.py)
+- Kumpulkan semua IPv4 privat kandidat (10.x, 172.16-31.x, 192.168.x).
+  Abaikan 127.x dan 169.254.x (APIPA).
+- Tentukan IP "utama" dengan trik socket UDP ke 8.8.8.8 (connect saja, tidak
+  mengirim paket; tangani error jika tidak ada route dengan fallback ke daftar
+  adapter).
+- Jika psutil tersedia, sertakan nama adapter. Beri label:
+    * 192.168.137.x            -> "Hotspot Laptop (Mode 2)"
+    * adapter bernama Wi-Fi/WLAN -> "Wi-Fi TPA (Mode 1)"
+    * adapter virtual (VirtualBox, VMware, Hyper-V/vEthernet, WSL, VPN)
+      -> sembunyikan dari daftar utama (tampilkan di "Lainnya" yang dilipat).
+- Tampilkan SEMUA kandidat yang relevan, masing-masing dengan QR dan teks URL.
+  Kandidat utama di paling atas.
+- Tombol "Segarkan IP" untuk mendeteksi ulang tanpa restart aplikasi.
+
+
+5. STRUKTUR FOLDER
+--------------------------------------------------------------------------------
+absensi-tpa/
+  app/
+    main.py              # inisialisasi FastAPI, middleware, router
+    db.py                # koneksi SQLite, WAL, inisialisasi skema, helper
+    network_utils.py     # deteksi IP, label adapter
+    qr_utils.py          # generate QR (PNG bytes)
+    services/
+      attendance.py      # logika tap, absensi manual, rekap
+      students.py        # CRUD santri + custom field
+      excel_io.py        # export/import xlsx
+      backup.py          # backup harian
+    routers/
+      public.py          # /scan, /api/tap, /api/ping
+      admin.py           # halaman /admin dan /api/admin
+    templates/           # Jinja2 (base.html, dashboard, santri, rekap, dll.)
+    static/
+      css/pico.min.css (lokal) + app.css
+      js/htmx.min.js (lokal), nosleep.min.js (lokal), scanner.js
+      sounds/ (opsional: beep ringan)
+  data/                  # tpa_absensi.db dibuat otomatis di sini
+  backup/                # salinan harian database
+  panduan/               # panduan bergambar (markdown/pdf) untuk pengurus
+  Start-Absensi.bat
+  Matikan-Absensi.bat
+  Install-Firewall.bat
+  requirements.txt
+  README_DEV.md
+
+
+6. SKEMA DATABASE (SQLite)
+--------------------------------------------------------------------------------
+Aktifkan: PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
+Gunakan migrasi sederhana (tabel schema_version) agar skema bisa berkembang.
+
+Tabel custom_fields
+- id          INTEGER PRIMARY KEY AUTOINCREMENT
+- field_key   TEXT UNIQUE NOT NULL     -- slug otomatis dari label (huruf kecil, underscore)
+- field_label TEXT NOT NULL            -- contoh: "Nama Orang Tua"
+- urutan      INTEGER NOT NULL DEFAULT 0
+- aktif       INTEGER NOT NULL DEFAULT 1  -- nonaktifkan, jangan hapus permanen
+
+Tabel santri
+- id          INTEGER PRIMARY KEY AUTOINCREMENT
+- nomor_urut  INTEGER                  -- nomor kartu/alias (1,2,3...); boleh NULL
+- rfid_uid    TEXT UNIQUE             -- boleh NULL bila kartu belum dipasangkan
+- nama        TEXT NOT NULL
+- extra_data  TEXT NOT NULL DEFAULT '{}'  -- JSON {field_key: nilai}
+- aktif       INTEGER NOT NULL DEFAULT 1  -- santri nonaktif tidak dihitung "alpha"
+- created_at  TEXT                     -- timestamp lokal
+
+Tabel absensi
+- id          INTEGER PRIMARY KEY AUTOINCREMENT
+- santri_id   INTEGER NOT NULL REFERENCES santri(id)
+- tanggal     TEXT NOT NULL            -- YYYY-MM-DD (waktu lokal laptop)
+- waktu       TEXT                     -- HH:MM:SS (NULL untuk izin/sakit/alpha manual)
+- status      TEXT NOT NULL DEFAULT 'Hadir'  -- Hadir | Izin | Sakit | Alpha
+- sumber      TEXT NOT NULL DEFAULT 'kartu'  -- kartu | manual
+- catatan     TEXT
+- UNIQUE(santri_id, tanggal)           -- satu catatan per santri per hari
+  (Jika nanti TPA punya beberapa sesi per hari, tambahkan kolom sesi dan ubah
+   constraint. Untuk sekarang SATU sesi per hari. Catat sebagai asumsi.)
+
+Tabel tap_log   (jejak semua tap mentah, untuk audit dan debugging)
+- id          INTEGER PRIMARY KEY AUTOINCREMENT
+- rfid_uid    TEXT NOT NULL
+- waktu_tap   TEXT NOT NULL            -- timestamp lokal lengkap
+- hasil       TEXT NOT NULL            -- berhasil | duplikat | tidak_dikenal | registrasi
+- santri_id   INTEGER                  -- NULL bila tidak dikenal
+- client_id   TEXT                     -- id acak per HP (untuk idempotensi)
+- client_tap_id TEXT                   -- id unik per tap dari HP
+- UNIQUE(client_id, client_tap_id)     -- cegah tap yang sama terkirim dua kali
+
+Tabel pengaturan   (key-value)
+- key TEXT PRIMARY KEY, value TEXT
+- Contoh key: nama_tpa, registrasi_santri_id (mode daftar kartu aktif),
+  registrasi_expires (batas waktu mode daftar kartu), backup_terakhir.
+
+Catatan waktu:
+- Semua tanggal/waktu dihitung dari JAM LAPTOP (zona waktu lokal), bukan jam HP.
+- Normalisasi UID: trim spasi/newline, ubah ke UPPERCASE, buang karakter
+  non-alfanumerik di awal/akhir. Simpan dalam bentuk ternormalisasi.
+
+
+7. API & ENDPOINT
+--------------------------------------------------------------------------------
+Publik (dapat diakses dari HP):
+- GET  /scan                -> halaman scanner
+- GET  /api/ping            -> {"ok": true, "server_time": "..."}  (cek koneksi)
+- POST /api/tap             -> body JSON:
+        { "uid": "0012345678", "client_id": "...", "client_tap_id": "...",
+          "age_ms": 0 }
+      age_ms = berapa milidetik yang lalu kartu di-tap (untuk tap yang
+      tertunda di antrean offline). Server menghitung waktu tap =
+      sekarang - age_ms. Jangan percaya jam HP.
+      Logika:
+        1. Normalisasi uid. Jika (client_id, client_tap_id) sudah pernah
+           diproses -> kembalikan hasil sebelumnya (idempoten), jangan proses ulang.
+        2. Jika mode registrasi kartu aktif (pengaturan registrasi_santri_id
+           ada dan belum kedaluwarsa):
+             - UID sudah dipakai santri lain -> hasil "uid_terpakai"
+             - jika belum -> simpan UID ke santri tersebut, matikan mode
+               registrasi, hasil "registrasi" (+ nama santri).
+        3. Cari santri berdasarkan rfid_uid.
+             - Tidak ada     -> hasil "tidak_dikenal" (HTTP 200, status di body)
+             - Santri nonaktif -> hasil "tidak_aktif"
+             - Sudah absen hari itu -> hasil "duplikat" (+ jam absen pertama)
+             - Selain itu -> insert absensi (Hadir, sumber kartu), hasil "berhasil"
+        4. Catat ke tap_log.
+      Respons: { "hasil": "berhasil|duplikat|tidak_dikenal|tidak_aktif|
+                 registrasi|uid_terpakai", "nama": "...", "nomor_urut": 3,
+                 "waktu": "07:31:05", "pesan": "teks ramah Bahasa Indonesia" }
+      Untuk "tidak_dikenal", JANGAN mengembalikan data santri apa pun.
+
+Admin (hanya localhost):
+- GET  /admin                       -> dashboard: QR/koneksi + absensi hari ini
+- GET  /admin/hari-ini              -> partial HTMX tabel absensi hari ini
+- GET  /admin/santri                -> daftar + form tambah/edit santri
+- POST /admin/santri, /admin/santri/{id}  -> tambah/ubah (nonaktifkan, bukan hapus)
+- GET/POST /admin/fields            -> kelola custom field (tambah, ubah label,
+                                        urutan, nonaktifkan)
+- POST /admin/santri/{id}/daftar-kartu -> aktifkan mode registrasi kartu
+                                           (berlaku 2 menit lalu otomatis mati)
+- GET  /admin/registrasi-status     -> polling status registrasi (HTMX)
+- POST /admin/absensi-manual        -> tambah/ubah/hapus absensi manual
+                                       (Hadir/Izin/Sakit/Alpha + catatan)
+- GET  /admin/rekap                 -> filter tanggal/santri/status + tampilan
+- GET  /admin/rekap/export.xlsx     -> download Excel sesuai filter
+- GET  /admin/import                -> unggah .xlsx data santri
+- POST /admin/import                -> validasi dan impor (lihat Bagian 11)
+- GET  /admin/qr.png?url=...        -> gambar QR (validasi: url harus mengarah
+                                       ke salah satu IP lokal milik laptop)
+- POST /admin/jaringan/segarkan     -> deteksi ulang IP
+- GET  /admin/tes-koneksi           -> status: jumlah ping dari HP terakhir
+                                       (lihat Bagian 8)
+- GET  /admin/backup                -> tombol "Cadangkan sekarang"
+- POST /admin/matikan               -> mematikan server dengan bersih
+
+
+8. HALAMAN ADMIN (SPESIFIKASI TAMPILAN)
+--------------------------------------------------------------------------------
+Navigasi sidebar/atas (ikon + teks besar, mudah dibaca):
+  1. "📱 Hubungkan HP"
+  2. "📋 Absensi Hari Ini"
+  3. "👧 Data Santri"
+  4. "📊 Rekap & Laporan"
+  5. "⚙️ Pengaturan" (field tambahan, backup, impor Excel, matikan aplikasi)
+
+Halaman "Hubungkan HP":
+- Dua kartu/tab besar: "Mode 1: Wi-Fi TPA" dan "Mode 2: Hotspot Laptop".
+  Masing-masing berisi QR, teks URL di bawah QR (mis. http://192.168.1.15:8000/scan),
+  dan langkah singkat 3-4 poin dengan bahasa awam.
+- Bila IP untuk suatu mode tidak terdeteksi, tampilkan pesan jelas
+  ("Hotspot belum menyala. Nyalakan hotspot dulu lalu klik Segarkan IP.").
+- Tombol "Segarkan IP".
+- Indikator "HP terhubung" (hijau/merah) berdasarkan ping terakhir dari /scan
+  (server mencatat waktu ping terakhir dan client_id). Kalau belum ada ping
+  dalam 15 detik -> merah "HP belum terhubung".
+- Kotak "Tes Koneksi": setelah HP scan QR, indikator berubah hijau, itu
+  tandanya jaringan OK. Jika QR sudah discan tapi indikator tetap merah,
+  tampilkan saran: "Coba Mode 2 (Hotspot Laptop)" (dugaan AP isolation).
+
+Halaman "Absensi Hari Ini":
+- Tabel: No, Nama, Jam Masuk, Status. Diperbarui HTMX tiap 3 detik.
+- Ringkasan di atas: Hadir X dari Y santri aktif. Jumlah tap hari ini
+  (untuk dicocokkan dengan jumlah anak yang datang).
+- Daftar "Belum hadir" yang bisa diklik untuk menandai Izin/Sakit/Hadir manual.
+
+Halaman "Data Santri":
+- Tabel dengan pencarian. Form tambah/edit: Nomor Kartu, Nama, kolom RFID
+  (hanya-baca) + custom field dinamis sesuai urutan.
+- Tombol "Daftarkan Kartu" per santri -> tampilkan kotak "Silakan tempelkan
+  kartu di alat scan HP..." dengan polling; saat sukses tampilkan centang hijau
+  dan UID terisi otomatis. Admin TIDAK PERNAH mengetik UID manual (sediakan
+  kolom edit UID hanya di bagian "Lanjutan" yang dilipat).
+- Tombol Nonaktifkan/Aktifkan santri (bukan hapus).
+- Konfirmasi dialog sebelum tindakan merusak.
+
+Halaman "Rekap & Laporan":
+- Filter: rentang tanggal, santri, status. Ringkasan per santri (jumlah Hadir,
+  Izin, Sakit, Alpha) untuk rentang itu. "Alpha" yang tidak dicatat manual
+  dihitung otomatis: hari kerja TPA tanpa catatan untuk santri aktif.
+  (Definisi "hari TPA": tanggal yang punya minimal satu absensi atau yang
+  ditandai admin. Catat sebagai asumsi.)
+- Tombol "Unduh Excel (.xlsx)".
+
+Gaya UI: font besar, kontras tinggi, tombol besar, warna sedikit. Hindari menu
+bertingkat. Pesan sukses/gagal tampil jelas.
+
+
+9. HALAMAN SCANNER HP (/scan) - SPESIFIKASI
+--------------------------------------------------------------------------------
+Tujuan: ultra-sederhana, hemat daya, tahan kesalahan.
+- Latar belakang gelap (hitam), teks besar. (Catatan: hemat daya hanya pada
+  layar OLED. Kecerahan layar TIDAK bisa diatur dari web; panduan pengurus
+  menyuruh menurunkan kecerahan manual.)
+- Awal halaman: satu tombol besar "MULAI SESI". Saat diklik:
+    * aktifkan NoSleep.js (butuh interaksi pengguna)
+    * minta fullscreen (jika didukung, abaikan jika gagal)
+    * fokuskan input RFID
+    * mulai ping berkala
+- Input RFID tersembunyi/kecil dengan atribut: inputmode="none", autofocus,
+  autocomplete="off", autocapitalize="off", spellcheck="false". Fokus kontinu:
+  pada event blur, fokus ulang otomatis dalam 100ms; juga fokus ulang saat
+  halaman visible/tap di layar.
+- Tangkap UID saat tombol Enter ditekan oleh reader. Tambahan perlindungan:
+  abaikan input kurang dari 4 karakter; bersihkan input setelah kirim;
+  debounce UID yang sama dalam 1.5 detik di sisi klien.
+- Setiap tap diberi client_tap_id unik (UUID/acak) dan disimpan ke antrean
+  localStorage sebelum dikirim, dihapus dari antrean hanya setelah server
+  menjawab. client_id acak dibuat sekali dan disimpan di localStorage.
+- Kirim ke POST /api/tap (path relatif, agar bekerja di IP mana pun).
+  Jika gagal (jaringan putus), biarkan di antrean dan coba kirim ulang tiap
+  3 detik secara otomatis. Sertakan age_ms saat mengirim.
+- Umpan balik visual layar penuh (singkat, 1.5-2 detik, lalu kembali ke gelap):
+    * HIJAU  : "✔ Berhasil" + Nama (+ nomor kartu)
+    * KUNING : "Sudah absen" + Nama + jam absen pertama
+    * MERAH  : "Kartu belum terdaftar"
+    * BIRU   : "Kartu terdaftar untuk [Nama]" (mode registrasi)
+    * ORANYE : "Santri tidak aktif"
+  Tambahan: getar singkat (navigator.vibrate) dan bunyi beep halus bila
+  didukung; semua boleh gagal diam-diam.
+- Indikator koneksi permanen di pojok: titik hijau "Terhubung" / merah
+  "Terputus". Tampilkan jumlah tap tertunda di antrean ("2 tap menunggu").
+- Jika terputus lebih dari 10 detik: banner merah besar "KONEKSI PUTUS - jangan
+  tutup halaman. Jika berlanjut, scan ulang QR di laptop."
+- PERINGATAN origin: antrean localStorage terikat alamat (IP:port). Jika IP
+  laptop berubah dan HP membuka alamat baru, antrean lama tidak terbaca.
+  Karena itu tampilkan jumlah tap tertunda dengan jelas dan panduan: sebelum
+  scan QR baru, pastikan antrean 0.
+- Tombol kecil "Selesai Sesi" untuk melepas NoSleep.
+- Perilaku bila reader menghasilkan awalan/akhiran atau format UID berbeda
+  (desimal 10 digit vs hex): server hanya menormalisasi, JANGAN mengubah
+  format. Dokumentasikan format yang ditemukan saat prototipe (Tahap 0).
+
+
+10. FITUR TAMBAHAN WAJIB
+--------------------------------------------------------------------------------
+Backup otomatis
+- Saat aplikasi dinyalakan dan setiap 24 jam selama berjalan, salin database
+  ke backup/tpa_absensi_YYYY-MM-DD.db (gunakan sqlite3 backup API / VACUUM INTO
+  agar konsisten). Simpan 30 salinan terakhir, hapus yang lebih lama.
+- Tombol "Cadangkan sekarang" di Pengaturan. Tampilkan waktu backup terakhir.
+
+Shutdown bersih
+- Tombol "Matikan Aplikasi" di Pengaturan dan Matikan-Absensi.bat. Pastikan
+  koneksi DB ditutup dan proses uvicorn berhenti.
+
+Penanganan error ramah
+- Jika port 8000 sudah dipakai: coba port berikutnya (8001, 8002...) dan
+  tampilkan di QR secara otomatis, atau tampilkan pesan jelas.
+- Log teknis ke file logs/app.log (rotasi), bukan ke layar pengguna.
+
+
+11. EXCEL: EXPORT & IMPOR
+--------------------------------------------------------------------------------
+Export (openpyxl)
+- Sheet "Rekap": kolom Tanggal, Nomor, Nama, Jam, Status, Sumber, Catatan +
+  kolom custom field aktif. Sheet "Ringkasan": jumlah Hadir/Izin/Sakit/Alpha
+  per santri. Header tebal, lebar kolom rapi, freeze panes.
+- Nama file: absensi_TPA_YYYY-MM-DD_sampai_YYYY-MM-DD.xlsx
+
+Impor santri
+- Sediakan tombol "Unduh template Excel" berisi header: Nomor, Nama, +
+  kolom custom field aktif (RFID boleh dikosongkan; kartu dipasangkan nanti
+  lewat Daftarkan Kartu).
+- Validasi: nama wajib, tangkap baris duplikat, tampilkan PRATINJAU sebelum
+  impor ("23 baris valid, 2 bermasalah: ...") lalu tombol konfirmasi.
+- Jangan menimpa data yang sudah ada tanpa konfirmasi eksplisit.
+
+
+12. SKRIP OTOMASI WINDOWS
+--------------------------------------------------------------------------------
+Start-Absensi.bat   (dibuat shortcut di Desktop oleh pengguna, tanpa auto-start)
+- Pindah ke folder aplikasi, jalankan server (dari exe hasil PyInstaller atau
+  python), tunggu server siap, lalu buka browser ke http://127.0.0.1:8000/admin.
+- Jika aplikasi sudah berjalan, JANGAN jalankan instance kedua; cukup buka
+  browser ke /admin.
+- Jendela konsol disembunyikan atau diminimalkan jika memungkinkan.
+
+Matikan-Absensi.bat
+- Memanggil endpoint shutdown lokal atau menghentikan proses aplikasi dengan
+  aman.
+
+Install-Firewall.bat   (dijalankan SEKALI, klik kanan > Run as administrator)
+- Tambah aturan firewall masuk untuk TCP port 8000 (profil Private dan Domain
+  dan Public sesuai kebutuhan; jelaskan di README). Contoh:
+  netsh advfirewall firewall add rule name="Absensi TPA" dir=in action=allow
+  protocol=TCP localport=8000 profile=private,public
+- Cek hak admin; jika tidak admin tampilkan pesan jelas.
+- Catatan di panduan: hotspot Windows kadang dikelompokkan jaringan "Public";
+  aturan harus mencakup profil tersebut agar Mode 2 bekerja.
+
+
+13. KEAMANAN & PRIVASI (DATA ANAK-ANAK)
+--------------------------------------------------------------------------------
+- Admin hanya dari localhost (Bagian 3). Tambahkan tes otomatis untuk ini.
+- /api/tap tidak membocorkan data selain nama santri yang baru ditap.
+- Tidak ada endpoint publik yang mendaftar/menampilkan daftar santri.
+- Validasi dan escape semua input (Jinja2 autoescape aktif). Gunakan query
+  SQL berparameter. Batasi ukuran upload Excel (mis. 5 MB).
+- Batasi laju /api/tap secara sederhana (mis. maks beberapa request/detik per
+  client_id) agar tidak membanjiri.
+- Opsional (tahap lanjutan): PIN admin jika kelak admin boleh dibuka dari HP.
+
+
+14. ROADMAP PENGEMBANGAN & KRITERIA SELESAI
+--------------------------------------------------------------------------------
+TAHAP 0 - Prototipe jaringan & hardware (lakukan paling awal, sebagian oleh
+          pengguna secara manual di lokasi)
+  Agent membuat: app minimal FastAPI dengan /scan (satu input + log tampilan
+  UID mentah + status koneksi + NoSleep) dan /api/tap sederhana yang hanya
+  mencatat UID. Tampilkan IP laptop dan QR di halaman sederhana.
+  Pengguna menguji di TPA:
+   a. HP (Wi-Fi TPA) bisa membuka halaman laptop? (uji AP isolation; jika tidak,
+      uji Mode 2 hotspot)
+   b. Reader terdeteksi lewat OTG, format UID apa, ada awalan/akhiran?
+   c. Layar tetap menyala dengan NoSleep? Baterai cukup untuk satu sesi?
+      HP bisa dicas sambil OTG?
+   d. HP tidak berpindah ke data seluler secara diam-diam?
+   e. Firewall: tanpa Install-Firewall.bat HP gagal, dengan itu berhasil?
+  Selesai bila: semua poin tercatat hasilnya di README_DEV.md.
+
+TAHAP 1 - Database & API inti
+  Skema (Bagian 6), migrasi, WAL, /api/tap lengkap (duplikat, tidak dikenal,
+  idempoten, registrasi), tap_log, normalisasi UID. Tes unit untuk logika tap.
+  Selesai bila: semua hasil tap dapat diuji lewat tes otomatis.
+
+TAHAP 2 - Halaman scanner lengkap
+  Seluruh Bagian 9: antrean offline, indikator, feedback warna, fokus kontinu.
+  Selesai bila: simulasi mematikan server lalu menyalakan kembali tidak
+  menghilangkan tap, dan tap ganda tidak menghasilkan data ganda.
+
+TAHAP 3 - Admin inti
+  Middleware localhost-only, Hubungkan HP (dua mode, deteksi IP, QR,
+  indikator koneksi), Absensi Hari Ini (polling), Data Santri + custom field
+  dinamis + Daftarkan Kartu lewat tap HP.
+  Selesai bila: alur "tambah santri -> daftarkan kartu -> tap -> muncul di
+  Absensi Hari Ini" berjalan end-to-end.
+
+TAHAP 4 - Absensi manual, rekap, Excel
+  Izin/Sakit/Alpha manual, rekap dengan filter, export .xlsx, impor .xlsx
+  dengan pratinjau.
+  Selesai bila: file Excel hasil export dapat dibuka dan isinya akurat.
+
+TAHAP 5 - Pengemasan & operasional
+  Backup otomatis, tombol matikan, skrip .bat (Start, Matikan, Firewall),
+  PyInstaller onedir, uji di Windows bersih tanpa Python.
+  Selesai bila: folder dapat disalin ke laptop lain lalu berjalan hanya dengan
+  Install-Firewall.bat (sekali) dan Start-Absensi.bat.
+
+TAHAP 6 - Panduan & uji lapangan
+  Buat panduan bergambar satu halaman (Bahasa Indonesia sederhana) untuk dua
+  skenario: "HP ke Wi-Fi TPA" dan "HP ke Hotspot Laptop", plus troubleshooting
+  ("HP tidak bisa terhubung", "Kartu tidak terbaca", "Layar HP mati sendiri").
+  Uji dengan beberapa sesi nyata dan perbaiki temuan.
+
+
+15. DAFTAR PERIKSA PENERIMAAN AKHIR
+--------------------------------------------------------------------------------
+[ ] Berjalan 100% offline (tidak ada request ke luar, tidak ada CDN)
+[ ] Admin tidak dapat dibuka dari perangkat lain (diuji dari HP -> 403)
+[ ] Dua mode jaringan menampilkan QR dan panduan masing-masing
+[ ] Pendaftaran kartu tanpa mengetik UID
+[ ] Tap ganda -> "Sudah absen", kartu asing -> merah, tidak ada crash
+[ ] Tap saat jaringan putus tidak hilang selama halaman tidak ditutup
+[ ] Absensi manual (Izin/Sakit/Alpha) dan rekap benar
+[ ] Export dan impor Excel berfungsi
+[ ] Backup harian berjalan, restore dapat dilakukan (dokumentasikan caranya)
+[ ] Semua teks UI Bahasa Indonesia, tanpa istilah teknis
+[ ] Dapat dijalankan oleh orang awam hanya dengan shortcut di desktop
+
+
+16. DI LUAR LINGKUP (JANGAN DIBANGUN)
+--------------------------------------------------------------------------------
+- Akses internet/cloud, akun pengguna multi-peran, aplikasi mobile native,
+  notifikasi WhatsApp/SMS, auto-start Windows, kontrol kecerahan HP dari web,
+  otomasi hotspot Windows lewat kode.
+================================================================================

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body class="scanner">
+  <main>
+    <header class="scanner-header">
+      <h1>Absensi TPA</h1>
+      <p id="connection" class="status">Memeriksa koneksi...</p>
+      <p id="pending-count" class="pending">Tap tertunda: 0</p>
+    </header>
+    <button id="start-session" type="button">MULAI SESI</button>
+    <p id="session-status">Tekan tombol untuk menyalakan layar selama sesi.</p>
+    <p id="offline-banner" class="offline-banner" hidden>KONEKSI PUTUS - jangan tutup halaman. Jika berlanjut, scan ulang QR di laptop.</p>
+    <input id="rfid-input" type="text" inputmode="none" autocomplete="off"
+           aria-label="Input RFID" autofocus>
+    <p class="hint">Tempelkan kartu ke alat pembaca. Halaman harus tetap terbuka.</p>
+    <section>
+      <h2>Riwayat tap</h2>
+      <ol id="tap-log" aria-live="polite"></ol>
+    </section>
+  </main>
+  <div id="feedback" class="feedback" role="status" aria-live="assertive" hidden>
+    <strong id="feedback-title"></strong>
+    <span id="feedback-message"></span>
+  </div>
+  <script src="/static/js/nosleep.min.js"></script>
+  <script src="/static/js/scanner.js"></script>
+</body>
+</html>

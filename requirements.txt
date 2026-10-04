@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+qrcode[pil]
+psutil
+pytest
+openpyxl
+pyinstaller

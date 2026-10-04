@@ -1,0 +1,13 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h2>Impor Data Santri</h2>
+<p>Unduh template, isi kolom Nomor dan Nama, lalu unggah kembali. Data lama tidak ditimpa.</p>
+<p><a role="button" href="/admin/import/template.xlsx">Unduh template Excel</a></p>
+<form method="post" action="/admin/import" enctype="multipart/form-data"><input type="file" name="file" accept=".xlsx" required><button type="submit">Validasi dan pratinjau</button></form>
+{% if preview %}
+<h3>Pratinjau</h3>
+<p>{{ preview.rows|length }} baris siap disimpan, {{ preview.problems|length }} baris bermasalah.</p>
+{% if preview.problems %}<ul class="error-list">{% for problem in preview.problems %}<li>{{ problem }}</li>{% endfor %}</ul>{% endif %}
+{% if preview.rows %}<form method="post" action="/admin/import/konfirmasi"><input type="hidden" name="token" value="{{ token }}"><button type="submit">Konfirmasi simpan {{ preview.rows|length }} baris</button></form>{% endif %}
+{% endif %}
+{% endblock %}

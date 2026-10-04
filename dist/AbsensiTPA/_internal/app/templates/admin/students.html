@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h2>Data Santri</h2>
+<form method="get" action="/admin/santri"><input name="q" value="{{ search }}" placeholder="Cari nama atau nomor"><button type="submit">Cari</button></form>
+<details open><summary><strong>Tambah santri</strong></summary>
+<form method="post" action="/admin/santri">
+  <label>Nama <input name="nama" required></label><label>Nomor urut <input name="nomor_urut" type="number"></label>
+  {% for field in fields %}<label>{{ field.field_label }} <input name="{{ field.field_key }}"></label>{% endfor %}
+  <button type="submit">Simpan santri</button>
+</form></details>
+<table><thead><tr><th>No</th><th>Nama</th><th>RFID</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>
+{% for student in students %}
+<tr><td>{{ student.nomor_urut or "-" }}</td><td>{{ student.nama }}</td><td>{{ student.rfid_uid or "Belum dipasangkan" }}</td><td>{{ "Aktif" if student.aktif else "Tidak aktif" }}</td><td>
+  <details><summary>Edit</summary><form method="post" action="/admin/santri/{{ student.id }}"><label>Nama <input name="nama" value="{{ student.nama }}" required></label><label>Nomor urut <input name="nomor_urut" type="number" value="{{ student.nomor_urut or '' }}"></label>{% for field in fields %}<label>{{ field.field_label }} <input name="{{ field.field_key }}" value="{{ student.extra_data.get(field.field_key, '') }}"></label>{% endfor %}<button type="submit">Simpan perubahan</button></form></details>
+  <form method="post" action="/admin/santri/{{ student.id }}/daftar-kartu"><button type="submit">Daftarkan Kartu</button></form>
+  <form method="post" action="/admin/santri/{{ student.id }}/aktif"><button type="submit">{{ "Nonaktifkan" if student.aktif else "Aktifkan" }}</button></form>
+</td></tr>
+{% endfor %}</tbody></table>
+<div hx-get="/admin/registrasi-status" hx-trigger="every 2s" hx-swap="innerHTML"></div>
+{% endblock %}

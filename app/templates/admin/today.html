@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<section hx-get="/admin/hari-ini" hx-trigger="every 3s" hx-select=".today-content" hx-target=".today-content" hx-swap="outerHTML" class="today-content">
+  <h2>Absensi Hari Ini</h2>
+  <div class="summary-grid">
+    <article><strong>{{ present_count }} dari {{ active_count }}</strong><span>santri aktif hadir</span></article>
+    <article><strong>{{ tap_count }}</strong><span>tap hari ini</span></article>
+    <article><strong>{{ absent|length }}</strong><span>belum hadir</span></article>
+  </div>
+  <h3>Belum hadir</h3>
+  <ul>{% for row in absent %}<li>{{ row.nomor_urut or "-" }} - {{ row.nama }}</li>{% else %}<li>Semua santri aktif sudah memiliki catatan.</li>{% endfor %}</ul>
+  <h3>Daftar absensi</h3>
+  <table><thead><tr><th>No</th><th>Nama</th><th>Jam Masuk</th><th>Status</th><th>Tindakan</th></tr></thead>
+  <tbody>{% for row in rows %}<tr><td>{{ row.nomor_urut or "-" }}</td><td>{{ row.nama }}</td><td>{{ row.waktu or "-" }}</td><td>{{ row.status or "Belum hadir" }}</td><td>{% if row.absensi_id and row.sumber == "manual" %}<details><summary>Ubah</summary><form method="post" action="/admin/absensi-manual"><input type="hidden" name="student_id" value="{{ row.id }}"><label>Tanggal <input type="date" name="tanggal" value="{{ row.tanggal }}"></label><label>Jam <input type="time" name="waktu" value="{{ row.waktu or '' }}"></label><label>Status <select name="status">{% for item in ["Hadir", "Izin", "Sakit", "Alpha"] %}<option {% if row.status == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label><label>Catatan <input name="catatan" value="{{ row.catatan or '' }}"></label><button type="submit">Simpan perubahan</button></form></details><form method="post" action="/admin/absensi-manual/{{ row.absensi_id }}/hapus"><button type="submit">Hapus manual</button></form>{% endif %}</td></tr>{% endfor %}</tbody></table>
+  <h3>Catat absensi manual</h3>
+  <form method="post" action="/admin/absensi-manual" class="manual-form">
+    <label>Santri <select name="student_id" required>{% for row in rows %}{% if row.aktif %}<option value="{{ row.id }}">{{ row.nama }}</option>{% endif %}{% endfor %}</select></label>
+    <label>Tanggal <input type="date" name="tanggal" required></label>
+    <label>Jam <input type="time" name="waktu"></label>
+    <label>Status <select name="status"><option>Hadir</option><option>Izin</option><option>Sakit</option><option>Alpha</option></select></label>
+    <label>Catatan <input name="catatan"></label>
+    <button type="submit">Simpan absensi manual</button>
+  </form>
+</section>
+{% endblock %}
