@@ -56,9 +56,8 @@
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || "Kartu tidak dapat didaftarkan.");
-      window.alert(`Kartu ${result.uid} berhasil terdaftar untuk ${result.nama}.`);
-      registerMessage.textContent = `Kartu terakhir: ${result.uid}. Tempelkan kartu berikutnya.`;
-      registerUid.focus();
+      window.alert(`[OK] Kartu ${result.uid} berhasil terdaftar untuk ${result.nama}.`);
+      registerDialog.close();
     } catch (error) {
       registerMessage.textContent = error.message;
       registerUid.focus();

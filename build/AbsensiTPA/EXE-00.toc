@@ -68,7 +68,7 @@
  [],
  False,
  False,
- 1791104354,
+ 1791106433,
  [('run.exe',
    'D:\\Volunteer\\AbsensiTPA\\.venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\run.exe',
    'EXECUTABLE')],
