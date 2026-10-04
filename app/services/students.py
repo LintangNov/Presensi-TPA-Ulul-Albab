@@ -6,7 +6,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from app.db import connect, get_setting, initialize, set_setting
+from app.db import connect, initialize
 from app.services.attendance import normalize_uid, now_local
 
 
@@ -98,23 +98,31 @@ class StudentService:
                 (int(active), student_id),
             )
 
-    def registration_status(self) -> dict[str, Any]:
+    def register_card(self, student_id: int, uid: str) -> dict[str, Any]:
+        normalized = normalize_uid(uid)
+        if not normalized:
+            raise ValueError("UID kartu kosong.")
         with connect(self.db_path) as connection:
-            student_id = get_setting(connection, "registrasi_santri_id")
-            expires = get_setting(connection, "registrasi_expires")
-            if not student_id or not expires:
-                return {"active": False}
-            try:
-                from datetime import datetime
-
-                active = now_local() < datetime.fromisoformat(expires)
-            except ValueError:
-                active = False
-            student = self.get_student(int(student_id)) if active else None
+            student = connection.execute(
+                "SELECT id, nama, nomor_urut FROM santri WHERE id = ?", (student_id,)
+            ).fetchone()
+            if student is None:
+                raise LookupError("Santri tidak ditemukan.")
+            owner = connection.execute(
+                "SELECT id FROM santri WHERE rfid_uid = ? AND id != ?",
+                (normalized, student_id),
+            ).fetchone()
+            if owner:
+                raise ValueError("Kartu sudah dipakai santri lain.")
+            connection.execute(
+                "UPDATE santri SET rfid_uid = ? WHERE id = ?",
+                (normalized, student_id),
+            )
             return {
-                "active": bool(active and student),
-                "student": student,
-                "expires": expires if active else None,
+                "ok": True,
+                "uid": normalized,
+                "nama": student["nama"],
+                "nomor_urut": student["nomor_urut"],
             }
 
     @staticmethod
