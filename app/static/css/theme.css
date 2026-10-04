@@ -17,7 +17,7 @@
 
   --success: #a5ffd6;
   --warning: #fff0b8;
-  --error: #ffc7c7;
+  --error: #ff6b6b;
   --info: #c5d9e2;
   --inactive: #ffd0a8;
   --radius-sm: .5rem;
@@ -31,6 +31,40 @@ html {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
+}
+
+.admin-header {
+  padding: 1.25rem 2rem;
+  background: var(--sidebar);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-header h1 {
+  margin: 0 0 1rem;
+  color: var(--text);
+}
+
+.admin-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+}
+
+.admin-header nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: .4rem .65rem;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.admin-header nav a:hover,
+.admin-header nav a:focus-visible {
+  background: var(--primary);
 }
 
 body {
@@ -198,6 +232,11 @@ tbody tr:hover {
 .demo-swatch {
   min-height: 120px;
   padding: 1rem;
+}
+
+.demo-swatch.grey-olive {
+  background: var(--surface);
+  border-left: .75rem solid var(--grey-olive);
 }
 
 .demo-swatch strong {
