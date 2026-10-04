@@ -92,3 +92,10 @@ def test_admin_routes_are_localhost_only():
     assert _run_asgi(app, "/admin", "192.168.1.50") == 403
     assert _run_asgi(app, "/api/admin/status", "192.168.1.50") == 403
     assert _run_asgi(app, "/admin", "127.0.0.1") == 200
+
+
+def test_style_preview_is_localhost_only():
+    from app.main import app
+
+    assert _run_asgi(app, "/admin/gaya", "192.168.1.50") == 403
+    assert _run_asgi(app, "/admin/gaya", "127.0.0.1") == 200

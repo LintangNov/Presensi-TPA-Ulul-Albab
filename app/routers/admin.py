@@ -72,6 +72,16 @@ async def dashboard(request: Request):
     )
 
 
+@router.get("/admin/gaya", response_class=HTMLResponse)
+async def style_preview(request: Request):
+    local_only(request)
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="admin/style_preview.html",
+        context=context(request, title="Pratinjau Gaya"),
+    )
+
+
 @router.get("/admin/hari-ini", response_class=HTMLResponse)
 async def today(request: Request):
     local_only(request)
