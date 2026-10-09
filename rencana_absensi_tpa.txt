@@ -14,7 +14,7 @@
 
 1. KONTEKS & TUJUAN
 --------------------------------------------------------------------------------
-Sistem mencatat absensi santri menggunakan satu USB RFID reader tipe HID/
+Sistem mencatat absensi murid menggunakan satu USB RFID reader tipe HID/
 keyboard emulator yang dicolok langsung ke PC Windows aplikasi.
 
 - Server, database SQLite, halaman admin, dan halaman scanner berjalan di PC
@@ -120,10 +120,10 @@ Refactor USB-only tidak mengubah tabel, query inti, rekap, atau Excel.
 
 7. API ADMIN DAN PENDAFTARAN KARTU
 --------------------------------------------------------------------------------
-Daftarkan Kartu dilakukan dari dialog di halaman Data Santri, bukan dari
+Daftarkan Kartu dilakukan dari dialog di halaman Data Murid, bukan dari
 jendela scanner.
 
-- Tombol membuka dialog untuk satu santri.
+- Tombol membuka dialog untuk satu murid.
 - Input dialog otomatis fokus dan membaca UID dari reader keyboard.
 - Enter mengirim JSON ke endpoint admin lokal, misalnya
   POST /api/admin/santri/{student_id}/daftar-kartu.
@@ -132,7 +132,7 @@ jendela scanner.
 - Setelah berhasil, tampilkan popup sederhana "Kartu berhasil terdaftar".
 - Dialog tetap terbuka, input dikosongkan, dan fokus kembali agar operator dapat
   mendaftarkan kartu berikutnya.
-- Jika UID sudah dipakai santri lain, tampilkan pesan gagal dan dialog tetap
+- Jika UID sudah dipakai murid lain, tampilkan pesan gagal dan dialog tetap
   terbuka agar operator dapat mencoba kartu lain.
 - Tidak perlu polling status registrasi.
 
@@ -142,7 +142,7 @@ Navigasi:
 - Dashboard
 - Buka Scanner
 - Absensi Hari Ini
-- Data Santri
+- Data Murid
 - Rekap & Laporan
 - Impor Excel
 - Pengaturan
@@ -150,11 +150,11 @@ Navigasi:
 Dashboard tidak menampilkan HP, jaringan, QR, atau status koneksi. Dashboard
 menampilkan ringkasan lokal dan tombol membuka scanner.
 
-Data Santri:
+Data Murid:
 - CRUD dan custom field tetap dipertahankan.
 - Tombol Daftarkan Kartu membuka dialog lokal.
 - UID hasil reader dapat ditampilkan setelah berhasil, bukan diketik manual.
-- Nonaktifkan/Aktifkan santri tetap tersedia.
+- Nonaktifkan/Aktifkan murid tetap tersedia.
 
 Halaman Absensi Hari Ini, Rekap & Laporan, Impor Excel, dan Pengaturan tetap
 mempertahankan fungsi yang ada.
@@ -170,7 +170,7 @@ Tujuan: satu reader USB, satu PC, satu jendela scanner.
 - UID pendek, karakter modifier, dan buffer yang terlalu lama ditangani secara
   aman tanpa mengubah normalisasi server.
 - Tampilkan hasil berhasil, sudah absen, kartu belum terdaftar, kartu terdaftar,
-  dan santri tidak aktif.
+  dan murid tidak aktif.
 - Tap duplikat cukup memberi feedback "Sudah absen"; tidak perlu antrean
   offline karena server berada pada PC yang sama.
 - Tidak ada NoSleep, ping jaringan, banner koneksi putus, localStorage queue,
@@ -216,7 +216,7 @@ dokumentasi, atau panduan.
 --------------------------------------------------------------------------------
 - Bind hanya ke 127.0.0.1.
 - Admin dan endpoint admin menolak client selain 127.0.0.1 atau ::1.
-- Tidak ada endpoint yang mengekspos daftar santri ke jaringan.
+- Tidak ada endpoint yang mengekspos daftar murid ke jaringan.
 - /api/tap hanya mengembalikan informasi hasil tap yang diperlukan.
 - Validasi input, query SQL berparameter, Jinja2 autoescape, dan batas upload
   Excel tetap dipertahankan.

@@ -1,16 +1,204 @@
 {% extends "admin/base.html" %}
 {% block content %}
-<h2>Pengaturan Kolom Tambahan</h2>
-<section>
-<h3>Backup database</h3>
-<p>Backup terakhir: <strong>{{ backup_terakhir or "Belum pernah" }}</strong></p>
-<form method="post" action="/admin/backup"><button type="submit">Cadangkan sekarang</button></form>
-<p>Backup otomatis dibuat saat aplikasi mulai dan setiap 24 jam. Tiga puluh salinan terbaru disimpan di <code>data/backup</code>.</p>
-</section>
-<section>
-<h3>Operasional</h3>
-<form method="post" action="/admin/matikan" onsubmit="return confirm('Matikan aplikasi sekarang?')"><button type="submit">Matikan Aplikasi</button></form>
-</section>
-<form method="post" action="/admin/fields"><label>Nama kolom <input name="label" placeholder="Contoh: Nama Orang Tua" required></label><label>Urutan <input name="urutan" type="number" value="0"></label><button type="submit">Tambah kolom</button></form>
-<table><thead><tr><th>Nama</th><th>Kunci</th><th>Urutan</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>{% for field in fields %}<tr><td><form method="post" action="/admin/fields/{{ field.id }}"><input name="label" value="{{ field.field_label }}"></td><td>{{ field.field_key }}</td><td><input name="urutan" type="number" value="{{ field.urutan }}"></td><td>{{ "Aktif" if field.aktif else "Tidak aktif" }}</td><td><button type="submit">Simpan</button></form>{% if field.aktif %}<form method="post" action="/admin/fields/{{ field.id }}/nonaktif"><button type="submit">Nonaktifkan</button></form>{% endif %}</td></tr>{% endfor %}</tbody></table>
+<div class="settings-container">
+  <div class="settings-header-banner">
+    <h2>Pengaturan Sistem</h2>
+    <p>Kelola pemeliharaan operasional, pencadangan database, dan kustomisasi kolom data murid.</p>
+  </div>
+
+  {% if reset_sukses %}
+  <div style="background: #c6f6d5; border: 1px solid #38a169; color: #22543d; border-radius: 12px; padding: 1rem 1.25rem; font-weight: 600;">
+    Seluruh data aplikasi telah berhasil direset ke kondisi awal. Salinan cadangan otomatis telah diamankan di folder <code>data/backup</code>.
+  </div>
+  {% endif %}
+
+  <!-- Kategori 1: Kolom Tambahan Data Murid -->
+  <div class="settings-card">
+    <div class="settings-card-title">
+      <span>Kustomisasi Kolom Murid</span>
+    </div>
+    <div class="settings-card-subtitle">
+      Tambah kolom khusus (misal: Nama Orang Tua, Kontak Darurat, Alergi) yang akan tampil di form murid dan rekap Excel.
+    </div>
+
+    <form method="post" action="/admin/fields" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; background: #f7fafc; padding: 1rem; border-radius: 10px; border: 1px solid #edf2f7;">
+      <label style="flex: 2; min-width: 180px; margin: 0;">
+        Nama Kolom
+        <input name="label" placeholder="Contoh: Nama Orang Tua" required style="margin-top: 0.25rem;">
+      </label>
+      <label style="width: 110px; margin: 0;">
+        Urutan
+        <input name="urutan" type="number" value="0" style="margin-top: 0.25rem;">
+      </label>
+      <button type="submit" class="btn-sm" style="margin: 0; min-height: 44px !important; height: 44px !important;">Tambah Kolom</button>
+    </form>
+
+    {% if fields %}
+    <table style="margin-top: 0.5rem;">
+      <thead>
+        <tr>
+          <th>Nama Label</th>
+          <th>Kunci Data</th>
+          <th style="width: 90px;">Urutan</th>
+          <th style="width: 100px;">Status</th>
+          <th style="width: 170px;">Tindakan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for field in fields %}
+        <tr>
+          <td>
+            <form method="post" action="/admin/fields/{{ field.id }}" style="margin: 0; display: flex; gap: 0.35rem; align-items: center;">
+              <input name="label" value="{{ field.field_label }}" style="min-height: 32px; height: 32px; padding: 0.2rem 0.5rem; font-size: 0.9rem;">
+          </td>
+          <td><code>{{ field.field_key }}</code></td>
+          <td>
+              <input name="urutan" type="number" value="{{ field.urutan }}" style="min-height: 32px; height: 32px; width: 70px; padding: 0.2rem 0.5rem; font-size: 0.9rem;">
+          </td>
+          <td>
+            <span class="badge {{ 'success' if field.aktif else 'inactive' }}" style="font-size: 0.8rem;">
+              {{ "Aktif" if field.aktif else "Nonaktif" }}
+            </span>
+          </td>
+          <td>
+            <div class="btn-group">
+              <button type="submit" class="btn-sm btn-secondary" title="Simpan perubahan nama/urutan">Simpan</button>
+            </form>
+            {% if field.aktif %}
+            <form method="post" action="/admin/fields/{{ field.id }}/nonaktif" style="margin: 0; display: inline;">
+              <button type="submit" class="btn-sm btn-danger" title="Nonaktifkan kolom ini">Nonaktifkan</button>
+            </form>
+            {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-table-notice">Data kolom kustom belum ada. Tambahkan kolom khusus di atas jika diperlukan.</p>
+    {% endif %}
+  </div>
+
+  <!-- Kategori 2: Pencadangan Database -->
+  <div class="settings-card">
+    <div class="settings-card-title">
+      <span>Pencadangan Database (Backup)</span>
+    </div>
+    <div class="settings-card-subtitle">
+      Pencadangan otomatis dilakukan setiap 24 jam dan saat aplikasi dimulai. 30 salinan terbaru disimpan di <code>data/backup</code>.
+    </div>
+
+    <div class="settings-item-row">
+      <div class="settings-item-info">
+        <strong>Cadangan Terakhir</strong>
+        <span>Status cadangan: <strong>{{ backup_terakhir or "Belum pernah dibuat" }}</strong></span>
+      </div>
+      <div>
+        <form method="post" action="/admin/backup">
+          <button type="submit" class="btn-sm btn-secondary">Cadangkan Sekarang</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kategori 3: Operasional Sistem -->
+  <div class="settings-card">
+    <div class="settings-card-title">
+      <span>Operasional Aplikasi</span>
+    </div>
+    <div class="settings-card-subtitle">
+      Kontrol pemeliharaan, status shutdown, dan opsi pembersihan basis data aplikasi.
+    </div>
+
+    <div class="settings-item-row">
+      <div class="settings-item-info">
+        <strong>Matikan Aplikasi</strong>
+        <span>Hentikan proses server lokal dan tutup aplikasi dengan aman.</span>
+      </div>
+      <div>
+        <form method="post" action="/admin/matikan" onsubmit="return confirm('Apakah Anda yakin ingin mematikan aplikasi sekarang?')">
+          <button type="submit" class="btn-sm btn-secondary">Matikan Aplikasi</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="settings-item-row">
+      <div class="settings-item-info">
+        <strong style="color: #c53030;">Hapus Seluruh Data (Reset Pabrik)</strong>
+        <span>Hapus permanen semua data murid, riwayat absensi, log tap, dan setelan kolom tambahan.</span>
+      </div>
+      <div>
+        <button type="button" id="btn-open-reset-dialog" class="btn-sm btn-danger">Hapus Seluruh Data</button>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+<!-- Modal Dialog Hapus Seluruh Data (Double Guard) -->
+<dialog id="reset-confirm-dialog">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 style="color: #c53030;">Konfirmasi Hapus Seluruh Data</h3>
+      <button type="button" class="modal-close-btn" id="btn-close-reset" aria-label="Tutup Dialog">✕</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+      <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 10px; padding: 1rem; color: #9b2c2c; font-size: 0.9rem;">
+        <p style="margin: 0 0 0.5rem 0; font-weight: 700; font-size: 0.95rem;">⚠️ PERINGATAN KERAS:</p>
+        <p style="margin: 0 0 0.5rem 0;">
+          Tindakan ini akan <strong>MENGHAPUS SEMUA DATA</strong> di aplikasi ini: seluruh data murid, seluruh riwayat kehadiran harian, seluruh log tap kartu, dan kolom khusus.
+        </p>
+        <p style="margin: 0; font-size: 0.85rem; color: #742a2a;">
+          * Cadangan darurat otomatis akan dibuat sebelum penghapusan di folder <code>data/backup</code>.
+        </p>
+      </div>
+
+      <p style="margin: 0; font-size: 0.9rem; color: #4a5568;">
+        Untuk memastikan Anda tidak salah mengeklik, ketik kata <strong>HAPUS</strong> di bawah ini untuk melanjutkan:
+      </p>
+
+      <form method="post" action="/admin/reset-data" id="reset-form" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <input 
+          id="reset-confirm-input" 
+          name="konfirmasi" 
+          autocomplete="off" 
+          placeholder="Ketik kata HAPUS di sini..." 
+          required 
+          style="border: 2px solid #feb2b2; text-align: center; font-weight: 700; letter-spacing: 0.1em; color: #c53030;"
+        >
+        
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+          <button type="button" id="btn-cancel-reset" class="btn-sm btn-secondary">Batal</button>
+          <button type="submit" id="btn-submit-reset" class="btn-sm btn-danger" disabled>Ya, Hapus Seluruh Data</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  const resetDialog = document.querySelector("#reset-confirm-dialog");
+  const openResetBtn = document.querySelector("#btn-open-reset-dialog");
+  const closeResetBtn = document.querySelector("#btn-close-reset");
+  const cancelResetBtn = document.querySelector("#btn-cancel-reset");
+  const resetInput = document.querySelector("#reset-confirm-input");
+  const submitResetBtn = document.querySelector("#btn-submit-reset");
+
+  openResetBtn.addEventListener("click", () => {
+    resetInput.value = "";
+    submitResetBtn.disabled = true;
+    resetDialog.showModal();
+    resetInput.focus();
+  });
+
+  const closeReset = () => resetDialog.close();
+  closeResetBtn.addEventListener("click", closeReset);
+  cancelResetBtn.addEventListener("click", closeReset);
+
+  resetInput.addEventListener("input", (e) => {
+    submitResetBtn.disabled = e.target.value.trim().toUpperCase() !== "HAPUS";
+  });
+</script>
 {% endblock %}

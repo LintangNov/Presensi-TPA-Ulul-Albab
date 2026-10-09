@@ -101,3 +101,48 @@ async def backup_loop(db_path: Path = DB_PATH) -> None:
             logging.getLogger("absensi_tpa").info("Backup otomatis dibuat: %s", path)
         except Exception:
             logging.getLogger("absensi_tpa").exception("Backup otomatis gagal.")
+
+
+def check_usb_scanner_connected() -> dict[str, Any]:
+    """Check if an external USB keyboard/RFID scanner is connected on Windows."""
+    if sys.platform != "win32":
+        return {"connected": True, "details": "Sistem non-Windows (mode simulasi)"}
+
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class RAWINPUTDEVICELIST(ctypes.Structure):
+            _fields_ = [("hDevice", wintypes.HANDLE), ("dwType", wintypes.DWORD)]
+
+        num_devices = wintypes.UINT()
+        ctypes.windll.user32.GetRawInputDeviceList(None, ctypes.byref(num_devices), ctypes.sizeof(RAWINPUTDEVICELIST))
+        if num_devices.value == 0:
+            return {"connected": False, "details": "Tidak ada perangkat input terdeteksi"}
+
+        devices = (RAWINPUTDEVICELIST * num_devices.value)()
+        ctypes.windll.user32.GetRawInputDeviceList(devices, ctypes.byref(num_devices), ctypes.sizeof(RAWINPUTDEVICELIST))
+        found = []
+        for d in devices:
+            size = wintypes.UINT()
+            ctypes.windll.user32.GetRawInputDeviceInfoW(d.hDevice, 0x20000007, None, ctypes.byref(size))
+            name_buf = ctypes.create_unicode_buffer(size.value)
+            ctypes.windll.user32.GetRawInputDeviceInfoW(d.hDevice, 0x20000007, name_buf, ctypes.byref(size))
+            val = name_buf.value
+            # Cek jika USB/HID keyboard eksternal (bukan pc built-in keyboard ACPI/MSFT)
+            if d.dwType in (1, 2) and (
+                "USB" in val.upper()
+                or ("VID_" in val.upper() and "ACPI" not in val.upper())
+                or ("HID" in val.upper() and "ACPI" not in val.upper() and "MSFT" not in val.upper())
+            ):
+                found.append(val)
+
+        return {
+            "connected": len(found) > 0,
+            "count": len(found),
+            "details": f"{len(found)} perangkat USB terhubung" if found else "Scanner USB tidak terdeteksi (Cek kabel)",
+        }
+    except Exception as exc:
+        logging.getLogger("absensi_tpa").debug("Gagal mendeteksi perangkat USB: %s", exc)
+        return {"connected": True, "details": "Scanner USB terhubung (Status default)"}
+

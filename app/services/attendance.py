@@ -10,6 +10,8 @@ from app.db import connect, get_setting, initialize, set_setting
 
 RESULTS = {
     "berhasil",
+    "pulang",
+    "denda",
     "duplikat",
     "tidak_dikenal",
     "tidak_aktif",
@@ -27,6 +29,11 @@ def now_local() -> datetime:
     return datetime.now().astimezone()
 
 
+def parse_time_minutes(time_str: str) -> int:
+    parts = time_str.split(":")
+    return int(parts[0]) * 60 + int(parts[1])
+
+
 class AttendanceService:
     def __init__(self, db_path: Path):
         self.db_path = db_path
@@ -38,13 +45,15 @@ class AttendanceService:
         uid: str | None = None,
         active: bool = True,
         number: int | None = None,
+        paket: str = "A",
     ) -> int:
         normalized = normalize_uid(uid) if uid else None
+        paket_val = paket.strip().upper() if paket and paket.strip().upper() in {"A", "B"} else "A"
         with connect(self.db_path) as connection:
             cursor = connection.execute(
                 "INSERT INTO santri "
-                "(nomor_urut, rfid_uid, nama, aktif, created_at) VALUES (?, ?, ?, ?, ?)",
-                (number, normalized, name, int(active), now_local().isoformat(timespec="seconds")),
+                "(nomor_urut, rfid_uid, nama, paket, aktif, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (number, normalized, name, paket_val, int(active), now_local().isoformat(timespec="seconds")),
             )
             return int(cursor.lastrowid)
 
@@ -54,7 +63,7 @@ class AttendanceService:
             if connection.execute(
                 "SELECT 1 FROM santri WHERE id = ?", (student_id,)
             ).fetchone() is None:
-                raise ValueError("Santri tidak ditemukan.")
+                raise ValueError("Murid tidak ditemukan.")
             set_setting(connection, "registrasi_santri_id", str(student_id))
             set_setting(connection, "registrasi_expires", expires.isoformat())
 
@@ -102,6 +111,10 @@ class AttendanceService:
             result = "tidak_dikenal"
             student_id = None
             waktu = None
+            tipe_tap = None
+            denda_menit = 0
+            custom_message = None
+
             if registration_active:
                 target_id = int(registration_id)
                 if student and student["id"] != target_id:
@@ -130,21 +143,79 @@ class AttendanceService:
             else:
                 student_id = student["id"]
                 attendance = connection.execute(
-                    "SELECT waktu FROM absensi WHERE santri_id = ? AND tanggal = ?",
+                    "SELECT * FROM absensi WHERE santri_id = ? AND tanggal = ?",
                     (student_id, date),
                 ).fetchone()
-                if attendance:
-                    result = "duplikat"
-                    waktu = attendance["waktu"]
-                else:
-                    connection.execute(
-                        "INSERT INTO absensi "
-                        "(santri_id, tanggal, waktu, status, sumber) "
-                        "VALUES (?, ?, ?, 'Hadir', 'kartu')",
-                        (student_id, date, time),
-                    )
+
+                if not attendance:
+                    # Tap pertama hari ini -> Absen Masuk
+                    tipe_tap = "masuk"
                     result = "berhasil"
                     waktu = time
+                    catatan = "Masuk sebelum jam operasional" if time < "06:30:00" else None
+                    connection.execute(
+                        "INSERT INTO absensi "
+                        "(santri_id, tanggal, waktu, status, sumber, catatan) "
+                        "VALUES (?, ?, ?, 'Hadir', 'kartu', ?)",
+                        (student_id, date, time, catatan),
+                    )
+                else:
+                    # Sudah ada absensi hari ini
+                    waktu_masuk = attendance["waktu"]
+                    waktu_pulang_existing = attendance["waktu_pulang"]
+
+                    # Cek jeda tap dari waktu masuk (minimal 1 menit untuk dianggap tap pulang, mencegah double tap instan)
+                    masuk_mins = parse_time_minutes(waktu_masuk) if waktu_masuk else 0
+                    current_mins = parse_time_minutes(time)
+                    diff_mins = current_mins - masuk_mins
+
+                    if diff_mins < 1 and not waktu_pulang_existing:
+                        # Tap dalam selisih kurang dari 1 menit setelah masuk -> duplikat masuk
+                        result = "duplikat"
+                        waktu = waktu_masuk
+                        tipe_tap = "masuk"
+                        custom_message = f"Absensi masuk baru saja dicatat pada pukul {waktu_masuk}."
+                    elif not waktu_pulang_existing:
+                        # Tap kedua -> Penjemputan / Pulang
+                        tipe_tap = "pulang"
+                        waktu = time
+                        student_keys = student.keys() if hasattr(student, "keys") else []
+                        paket = student["paket"] if "paket" in student_keys else "A"
+
+                        # Batas penjemputan dan toleransi 15 menit
+                        # Paket A (Half Day): 13.00 toleransi 15 mnt -> 13.15 (795 menit)
+                        # Paket B (Full Day): 16.00 toleransi 15 mnt -> 16.15 (975 menit)
+                        if paket == "B":
+                            toleransi_mins = 16 * 60 + 15
+                            batas_teks = "16:00 (toleransi 16:15)"
+                        else:
+                            toleransi_mins = 13 * 60 + 15
+                            batas_teks = "13:00 (toleransi 13:15)"
+
+                        if current_mins > toleransi_mins:
+                            denda_menit = current_mins - toleransi_mins
+                            status_pulang = "Denda Keterlambatan"
+                            result = "denda"
+                            custom_message = (
+                                f"Penjemputan lewat batas {batas_teks}. "
+                                f"Terlambat {denda_menit} menit. Dikenakan denda."
+                            )
+                        else:
+                            status_pulang = "Tepat Waktu"
+                            result = "pulang"
+                            custom_message = f"Penjemputan tepat waktu ({time}). Sampai jumpa!"
+
+                        connection.execute(
+                            "UPDATE absensi SET waktu_pulang = ?, status_pulang = ?, denda_menit = ? "
+                            "WHERE santri_id = ? AND tanggal = ?",
+                            (time, status_pulang, denda_menit, student_id, date),
+                        )
+                    else:
+                        # Sudah absen pulang sebelumnya
+                        result = "duplikat"
+                        waktu = waktu_pulang_existing
+                        tipe_tap = "pulang"
+                        custom_message = f"Murid sudah dijemput hari ini pada pukul {waktu_pulang_existing}."
 
             connection.execute(
                 "INSERT INTO tap_log "
@@ -153,27 +224,53 @@ class AttendanceService:
                 (normalized, tap_timestamp, result, student_id, client_id, client_tap_id),
             )
             public_student = None if result == "uid_terpakai" else student
-            return self._response(result, public_student, waktu)
+            return self._response(
+                result=result,
+                student=public_student,
+                waktu=waktu,
+                tipe_tap=tipe_tap,
+                denda_menit=denda_menit,
+                custom_message=custom_message,
+            )
 
     @staticmethod
     def _response(
-        result: str, student: sqlite3.Row | None, waktu: str | None
+        result: str,
+        student: sqlite3.Row | None,
+        waktu: str | None,
+        tipe_tap: str | None = None,
+        denda_menit: int = 0,
+        custom_message: str | None = None,
     ) -> dict[str, Any]:
+        default_messages = {
+            "berhasil": "Absensi masuk berhasil dicatat.",
+            "pulang": "Penjemputan tepat waktu berhasil dicatat.",
+            "denda": "Penjemputan melewati batas waktu toleransi. Dikenakan denda.",
+            "duplikat": "Murid sudah memiliki catatan absensi hari ini.",
+            "tidak_dikenal": "Kartu belum terdaftar.",
+            "tidak_aktif": "Data murid ini sedang tidak aktif.",
+            "registrasi": "Kartu berhasil didaftarkan.",
+            "uid_terpakai": "Kartu sudah dipakai murid lain.",
+        }
         response: dict[str, Any] = {
             "hasil": result,
-            "pesan": {
-                "berhasil": "Absensi berhasil dicatat.",
-                "duplikat": "Santri sudah absen hari ini.",
-                "tidak_dikenal": "Kartu belum terdaftar.",
-                "tidak_aktif": "Data santri ini sedang tidak aktif.",
-                "registrasi": "Kartu berhasil didaftarkan.",
-                "uid_terpakai": "Kartu sudah dipakai santri lain.",
-            }[result],
+            "pesan": custom_message or default_messages.get(result, "Tap diproses."),
         }
         if result != "tidak_dikenal" and student:
-            response.update({"nama": student["nama"], "nomor_urut": student["nomor_urut"]})
+            student_keys = student.keys() if hasattr(student, "keys") else []
+            paket = student["paket"] if "paket" in student_keys else "A"
+            response.update({
+                "nama": student["nama"],
+                "nomor_urut": student["nomor_urut"],
+                "paket": paket,
+                "paket_label": "Paket A (Half Day)" if paket == "A" else "Paket B (Full Day)",
+            })
         if waktu:
             response["waktu"] = waktu
+        if tipe_tap:
+            response["tipe_tap"] = tipe_tap
+        if denda_menit > 0:
+            response["denda_menit"] = denda_menit
         return response
 
     def _response_for_log(
@@ -185,10 +282,25 @@ class AttendanceService:
             else None
         )
         waktu = None
-        if student and log["hasil"] in {"berhasil", "duplikat"}:
+        tipe_tap = None
+        denda_menit = 0
+        if student and log["hasil"] in {"berhasil", "pulang", "denda", "duplikat"}:
             row = connection.execute(
-                "SELECT waktu FROM absensi WHERE santri_id = ? ORDER BY id DESC LIMIT 1",
+                "SELECT * FROM absensi WHERE santri_id = ? ORDER BY id DESC LIMIT 1",
                 (student["id"],),
             ).fetchone()
-            waktu = row["waktu"] if row else None
-        return self._response(log["hasil"], student, waktu)
+            if row:
+                if log["hasil"] in {"pulang", "denda"}:
+                    waktu = row["waktu_pulang"] or row["waktu"]
+                    tipe_tap = "pulang"
+                    denda_menit = row["denda_menit"] or 0
+                else:
+                    waktu = row["waktu"]
+                    tipe_tap = "masuk"
+        return self._response(
+            result=log["hasil"],
+            student=student,
+            waktu=waktu,
+            tipe_tap=tipe_tap,
+            denda_menit=denda_menit,
+        )

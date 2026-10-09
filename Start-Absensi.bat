@@ -44,6 +44,7 @@ for /l %%I in (1,1,15) do (
   timeout /t 1 /nobreak >nul
 )
 echo Server tidak merespons. Periksa logs\app.log.
+pause
 exit /b 1
 
 :ready

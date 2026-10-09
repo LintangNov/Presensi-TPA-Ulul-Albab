@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "main.py", line 7, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "fastapi\__init__.py", line 7, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "fastapi\applications.py", line 7, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "fastapi\routing.py", line 45, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "fastapi\params.py", line 7, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "fastapi\exceptions.py", line 5, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "pydantic\__init__.py", line 5, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "pydantic\_migration.py", line 4, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "pydantic\warnings.py", line 5, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "pydantic\version.py", line 7, in <module>
+  File "pyimod02_importers.py", line 457, in exec_module
+  File "pydantic_core\__init__.py", line 8, in <module>
+ModuleNotFoundError: No module named 'pydantic_core._pydantic_core'
+[PYI-16168:ERROR] Failed to execute script 'main' due to unhandled exception!

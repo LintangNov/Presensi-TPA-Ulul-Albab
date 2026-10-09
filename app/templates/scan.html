@@ -3,30 +3,251 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ title }}</title>
-  <link rel="stylesheet" href="/static/css/app.css">
-  <link rel="stylesheet" href="/static/css/theme.css">
+  <title>{{ title }} - Display TV LED</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='css/pico.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/theme.css') }}">
+  <style>
+    body.tv-display {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    .tv-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .tv-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .tv-brand h1 {
+      margin: 0;
+      font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .tv-clock {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: clamp(0.9rem, 1.8vw, 1.25rem);
+      font-weight: 700;
+      color: var(--text);
+    }
+    .tv-time {
+      background: var(--primary-soft);
+      padding: 0.35rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: monospace;
+      font-size: clamp(1rem, 2vw, 1.4rem);
+    }
+    .tv-main {
+      flex: 1;
+      padding: clamp(1rem, 2vw, 2rem);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+      gap: clamp(1rem, 2vw, 2rem);
+      box-sizing: border-box;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .tv-card-main {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: clamp(1.5rem, 3vw, 2.5rem);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+      min-height: 380px;
+      position: relative;
+      overflow: hidden;
+    }
+    .tv-card-history {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: clamp(1rem, 2vw, 1.5rem);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-md);
+    }
+    .tv-history-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 1rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+    .tv-active-badge {
+      display: inline-block;
+      padding: 0.5rem 1.4rem;
+      border-radius: 999px;
+      font-size: clamp(0.95rem, 1.8vw, 1.35rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .tv-active-name {
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      font-weight: 900;
+      line-height: 1.15;
+      margin: 0.25rem 0 0.75rem 0;
+      color: var(--text);
+      text-shadow: none;
+    }
+    .tv-active-meta {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .tv-meta-pill {
+      background: var(--primary-soft);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      font-size: clamp(0.9rem, 1.5vw, 1.15rem);
+      font-weight: 700;
+    }
+    .tv-denda-alert {
+      background: var(--error);
+      border: 2px solid var(--text);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 0.85rem 1.5rem;
+      margin-top: 1rem;
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      font-weight: 800;
+      animation: alert-blink 1.2s infinite;
+    }
+    @keyframes alert-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    .tv-idle-icon {
+      font-size: clamp(3rem, 7vw, 5rem);
+      margin-bottom: 1rem;
+      color: var(--text);
+      animation: float 2.5s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .tv-history-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      overflow-y: auto;
+      max-height: 480px;
+    }
+    .tv-history-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: clamp(0.85rem, 1.4vw, 1rem);
+      color: var(--text);
+    }
+    .tv-badge-masuk { background: var(--success); color: var(--text); }
+    .tv-badge-pulang { background: var(--info); color: var(--text); }
+    .tv-badge-denda { background: var(--error); color: var(--text); }
+    .tv-badge-duplikat { background: var(--warning); color: var(--text); }
+    .tv-badge-error { background: var(--error); color: var(--text); }
+  </style>
 </head>
-<body class="scanner">
-  <main>
-    <header class="scanner-header">
-      <h1>Absensi TPA</h1>
-      <p id="scanner-status" class="status connected">Scanner aktif</p>
-      <p class="hint">Tempelkan kartu pada reader USB.</p>
-    </header>
-    <section>
-      <h2>Riwayat tap</h2>
-      <ol id="tap-log" aria-live="polite"></ol>
-    </section>
+<body class="tv-display">
+  <header class="tv-header">
+    <div class="tv-clock">
+      <span id="tv-date" style="color: var(--text-muted);">Kamis, 8 Oktober 2026</span>
+      <span id="tv-time" class="tv-time">--:--:-- WIB</span>
+    </div>
+  </header>
+
+  <main class="tv-main">
+    <!-- Panel Kiri / Atas: Kartu Tap Terkini -->
+    <div class="tv-card-main" id="tv-main-card">
+      <div id="tv-idle-view">
+        <div class="tv-idle-icon">🎴</div>
+        <h2 style="font-size: clamp(1.5rem, 3.5vw, 2.3rem); margin: 0 0 0.75rem 0; font-weight: 800;">
+          Silakan Tap Kartu Murid
+        </h2>
+        <p style="color: var(--text-muted); font-size: clamp(0.95rem, 1.6vw, 1.2rem); max-width: 480px; margin: 0 auto 1.5rem auto;">
+          Tempelkan kartu RFID pada reader USB untuk mencatat kehadiran atau kepulangan.
+        </p>
+        <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+          <span class="tv-meta-pill">🌅 Masuk: Mulai 06:30</span>
+          <span class="tv-meta-pill">Paket A: Maks 13:00 (Tol. 13:15)</span>
+          <span class="tv-meta-pill">Paket B: Maks 16:00 (Tol. 16:15)</span>
+        </div>
+      </div>
+
+      <div id="tv-active-view" style="display: none; width: 100%;">
+        <span id="tv-status-badge" class="tv-active-badge"></span>
+        <h2 id="tv-student-name" class="tv-active-name"></h2>
+        <div class="tv-active-meta">
+          <span id="tv-student-no" class="tv-meta-pill"></span>
+          <span id="tv-student-paket" class="tv-meta-pill"></span>
+          <span id="tv-tap-time" class="tv-meta-pill"></span>
+        </div>
+        <p id="tv-status-message" style="font-size: clamp(1rem, 1.8vw, 1.25rem); color: var(--text-muted); margin: 0.5rem 0;"></p>
+        <div id="tv-denda-box" class="tv-denda-alert" style="display: none;"></div>
+      </div>
+    </div>
+
+    <!-- Panel Kanan / Bawah: Riwayat Tap Terkini -->
+    <div class="tv-card-history">
+      <div class="tv-history-title">
+        <span>Riwayat Tap Terkini</span>
+        <span style="font-size: 0.85rem; color: var(--text); font-weight: 600;">🟢 Live Update</span>
+      </div>
+      <ul id="tv-history-list" class="tv-history-list">
+        <li id="tv-history-empty" style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-style: italic;">
+          Menunggu aktivitas absensi hari ini...
+        </li>
+      </ul>
+    </div>
   </main>
-  <div id="focus-warning" class="focus-warning" role="alert" hidden>
-    <strong>SCANNER TIDAK AKTIF</strong>
-    <span>Klik jendela ini untuk mengaktifkan kembali.</span>
-  </div>
-  <div id="feedback" class="feedback" role="status" aria-live="assertive" hidden>
-    <strong id="feedback-title"></strong>
-    <span id="feedback-message"></span>
-  </div>
-  <script src="/static/js/scanner.js"></script>
+
+  <script src="{{ url_for('static', path='js/scanner.js') }}"></script>
 </body>
 </html>

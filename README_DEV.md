@@ -36,13 +36,13 @@ field. Ketika jendela kehilangan fokus, scanner menampilkan:
 
 Tap tidak diantrikan ke jaringan karena server dan reader berada pada PC yang
 sama. Hasil tap tetap memakai logika absensi lama: berhasil, duplikat, kartu
-belum terdaftar, dan santri tidak aktif.
+belum terdaftar, dan murid tidak aktif.
 
 ## Daftarkan Kartu
 
-Pada halaman Data Santri, klik **Daftarkan Kartu**. Dialog akan memfokuskan
+Pada halaman Data Murid, klik **Daftarkan Kartu**. Dialog akan memfokuskan
 input, lalu reader mengirim UID dan Enter. Endpoint admin lokal menormalisasi
-UID dan menolak kartu yang sudah dipakai santri lain. Setelah berhasil, dialog
+UID dan menolak kartu yang sudah dipakai murid lain. Setelah berhasil, dialog
 tetap terbuka, input dikosongkan, dan fokus dikembalikan agar kartu berikutnya
 dapat didaftarkan.
 
@@ -68,10 +68,10 @@ mengedit isi `dist` secara manual.
 
 1. Jalankan Start dan pastikan admin serta scanner terbuka sebagai jendela
    terpisah.
-2. Tambah santri tanpa UID, buka Daftarkan Kartu, tempel kartu, dan pastikan
+2. Tambah murid tanpa UID, buka Daftarkan Kartu, tempel kartu, dan pastikan
    UID tampil setelah sukses.
 3. Daftarkan kartu kedua tanpa menutup dialog.
-4. Coba kartu yang sama pada santri lain dan pastikan pesan penolakan muncul.
+4. Coba kartu yang sama pada murid lain dan pastikan pesan penolakan muncul.
 5. Tap kartu terdaftar dan pastikan absensi berhasil.
 6. Tap kartu yang sama sekali lagi dan pastikan hanya feedback “Sudah absen”.
 7. Tap kartu yang belum terdaftar dan pastikan feedback yang benar.

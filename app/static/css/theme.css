@@ -33,44 +33,74 @@ html {
   font-family: var(--font-body);
 }
 
-.admin-header {
-  padding: 1.25rem 2rem;
-  background: var(--sidebar);
+body {
+  margin: 0;
+  background: var(--bg);
   color: var(--text);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
+  font-size: 1rem;
+  line-height: 1.55;
 }
 
-.admin-header h1 {
-  margin: 0 0 1rem;
-  color: var(--text);
-}
-
-.admin-header nav {
+/* Container Layout Utama & Sidebar Kiri */
+.admin-layout {
   display: flex;
-  flex-wrap: wrap;
-  gap: .5rem 1rem;
+  min-height: 100vh;
 }
 
-.admin-header nav a {
-  display: inline-flex;
+.admin-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sidebar-brand h1 {
+  font-size: 1.35rem;
+  margin: 0;
+  color: var(--text);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.sidebar-nav a {
+  display: flex;
   align-items: center;
-  min-height: 44px;
-  padding: .4rem .65rem;
+  padding: .65rem .85rem;
   border-radius: var(--radius-sm);
   color: var(--text);
   font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.admin-header nav a:hover,
-.admin-header nav a:focus-visible {
-  background: var(--primary);
+.sidebar-nav a:hover,
+.sidebar-nav a:focus-visible {
+  background: var(--surface);
+  color: var(--text);
 }
 
+.sidebar-nav a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 0.35rem solid var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Area Konten Utama */
 .admin-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 4rem;
+  flex: 1;
+  max-width: 100%;
+  padding: 2rem 2.5rem 4rem;
+  overflow-x: auto;
 }
 
 .admin-main > h2,
@@ -152,6 +182,7 @@ html {
   width: 100%;
 }
 
+/* Dialog & Backdrop */
 dialog {
   max-width: 34rem;
   width: calc(100% - 2rem);
@@ -159,8 +190,10 @@ dialog {
   color: var(--text);
 }
 
-dialog::backdrop {
-  background: rgba(43, 42, 38, .25);
+dialog::backdrop,
+dialog#register-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
 }
 
 dialog form[method="dialog"] {
@@ -168,14 +201,7 @@ dialog form[method="dialog"] {
   justify-content: flex-end;
 }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 1rem;
-  line-height: 1.55;
-}
-
+/* Link & Form Elements */
 a {
   color: var(--text);
   text-decoration-thickness: 2px;
@@ -199,7 +225,7 @@ button,
   border-radius: var(--radius-sm);
   padding: .65rem 1rem;
   background: var(--primary);
-  color: var(--text);
+  color: var(--text) !important;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -209,6 +235,7 @@ button,
 button:hover,
 .button:hover {
   background: var(--primary-soft);
+  color: var(--text) !important;
 }
 
 button.secondary,
@@ -250,6 +277,7 @@ label {
   font-weight: 600;
 }
 
+/* Table */
 table {
   width: 100%;
   border-collapse: separate;
@@ -278,6 +306,7 @@ tbody tr:hover {
   background: var(--frozen-water);
 }
 
+/* Status Badges */
 .badge,
 .alert {
   display: inline-flex;
@@ -301,7 +330,7 @@ tbody tr:hover {
 .info { background: var(--info); }
 .inactive { background: var(--inactive); }
 
-/* The scanner stays light on PC; semantic colors carry the feedback. */
+/* Scanner Page */
 .scanner {
   background: var(--bg);
   color: var(--text);
@@ -365,6 +394,7 @@ tbody tr:hover {
   content: "[X]";
 }
 
+/* Print CSS */
 .print-page {
   background: #fff;
 }
@@ -375,13 +405,14 @@ tbody tr:hover {
     background: #fff !important;
   }
 
-  .admin-header,
+  .admin-sidebar,
   nav,
   button {
     display: none !important;
   }
 }
 
+/* Style Demo */
 .style-demo {
   max-width: 1120px;
   margin: 0 auto;
@@ -414,3 +445,421 @@ tbody tr:hover {
   gap: .6rem;
   padding-left: 1.2rem;
 }
+
+/* ============================================================
+   Tombol Tindakan Kompak & Group
+   ============================================================ */
+.btn-sm {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0.25rem 0.65rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.35rem !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+}
+
+.btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.btn-danger {
+  background: var(--error) !important;
+  color: #fff !important;
+  border-color: #e53e3e !important;
+}
+.btn-danger:hover {
+  background: #e53e3e !important;
+}
+
+.btn-secondary {
+  background: #f7fafc !important;
+  color: #2d3748 !important;
+  border-color: #cbd5e0 !important;
+}
+.btn-secondary:hover {
+  background: #edf2f7 !important;
+}
+
+/* ============================================================
+   Toast / Snackbar Admin
+   ============================================================ */
+.admin-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 9999;
+  background: #2d3748;
+  color: #ffffff;
+  padding: 0.85rem 1.4rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  transform: translateY(120%);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  pointer-events: none;
+  max-width: 420px;
+}
+.admin-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.admin-toast.success { background: #276749; color: #fff; border-left: 5px solid #48bb78; }
+.admin-toast.danger { background: #9b2c2c; color: #fff; border-left: 5px solid #f56565; }
+.admin-toast.warning { background: #7b341e; color: #fff; border-left: 5px solid #ed8936; }
+.admin-toast.info { background: #2b6cb0; color: #fff; border-left: 5px solid #4299e1; }
+
+/* ============================================================
+   Modal Dialog Modern & Dialog Daftarkan Kartu (Fix Layout)
+   ============================================================ */
+dialog {
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  max-width: 440px !important;
+  width: 90% !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+dialog::backdrop {
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.modal-card {
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2) !important;
+  padding: 1.5rem !important;
+  color: var(--text) !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+.modal-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  border-bottom: 1px solid #edf2f7 !important;
+  padding-bottom: 0.75rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.modal-header h3 {
+  margin: 0 !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #1a202c !important;
+}
+
+.modal-close-btn {
+  background: transparent !important;
+  border: none !important;
+  font-size: 1.25rem !important;
+  color: #718096 !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+  min-height: auto !important;
+  line-height: 1 !important;
+  border-radius: 6px !important;
+}
+.modal-close-btn:hover {
+  background: #edf2f7 !important;
+  color: #1a202c !important;
+}
+
+.modal-student-badge {
+  background: #edf2f7;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.modal-student-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2b6cb0;
+  margin: 0;
+}
+.modal-student-meta {
+  font-size: 0.85rem;
+  color: #718096;
+  margin: 0;
+}
+
+.rfid-scan-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+.rfid-pulse-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #ebf8ff;
+  color: #3182ce;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 0 0 0 rgba(49, 130, 206, 0.4);
+  animation: rfid-pulse 1.8s infinite;
+}
+@keyframes rfid-pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(49, 130, 206, 0.5); }
+  70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(49, 130, 206, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(49, 130, 206, 0); }
+}
+
+/* ============================================================
+   Kiska-Inspired Settings Layout (Gambar Referensi Pengaturan)
+   ============================================================ */
+.settings-container {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.settings-header-banner {
+  margin-bottom: 0.5rem;
+}
+.settings-header-banner h2 {
+  font-size: 1.85rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+  color: #1a202c;
+}
+.settings-header-banner p {
+  color: #718096;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.settings-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.settings-card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-card-subtitle {
+  font-size: 0.85rem;
+  color: #718096;
+  margin: -0.5rem 0 0.5rem 0;
+}
+
+.settings-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #edf2f7;
+  gap: 1.5rem;
+}
+.settings-item-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.settings-item-info strong {
+  display: block;
+  font-size: 1rem;
+  color: #2d3748;
+  margin-bottom: 0.2rem;
+}
+.settings-item-info span {
+  font-size: 0.85rem;
+  color: #718096;
+}
+
+.settings-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Switch Toggle Modern */
+.switch-toggle {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 30px;
+  margin: 0;
+  flex-shrink: 0;
+}
+.switch-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--inactive);
+  border: 2px solid var(--text);
+  transition: 0.3s;
+  border-radius: 30px;
+  box-shadow: var(--shadow-sm);
+}
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+  border: 1px solid var(--text);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+input:checked + .switch-slider {
+  background-color: var(--success);
+  border-color: var(--text);
+}
+input:checked + .switch-slider:before {
+  transform: translateX(26px);
+}
+/* Wadah toggle scanner di dashboard: background kontras */
+.scanner-toggle-box {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--primary-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.9rem;
+  box-shadow: var(--shadow-sm);
+}
+.scanner-toggle-box.is-off {
+  background: var(--inactive);
+}
+
+/* Status Indicator Dots */
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.status-dot.active {
+  background: #38a169;
+  box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.2);
+}
+.status-dot.inactive {
+  background: #a0aec0;
+}
+
+.hw-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.hw-badge.connected {
+  background: #c6f6d5;
+  color: #22543d;
+}
+.hw-badge.disconnected {
+  background: #feebc8;
+  color: #7b341e;
+}
+
+/* Dashboard Scanner Card */
+.dashboard-scanner-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+}
+.scanner-ctrl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.scanner-ctrl-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.scanner-ctrl-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.feed-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.feed-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #edf2f7;
+  font-size: 0.9rem;
+}
+
+/* Keterangan saat tabel belum ada isinya */
+.empty-table-notice {
+  background: var(--primary-soft);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0.75rem 0 1.25rem 0;
+}

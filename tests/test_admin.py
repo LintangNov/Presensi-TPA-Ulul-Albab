@@ -99,3 +99,25 @@ def test_style_preview_is_localhost_only():
 
     assert _run_asgi(app, "/admin/gaya", "192.168.1.50") == 403
     assert _run_asgi(app, "/admin/gaya", "127.0.0.1") == 200
+
+
+def test_delete_student_and_reset_data(tmp_path):
+    from app.db import reset_all_data
+    db_path = tmp_path / "test_ops.db"
+    students = StudentService(db_path)
+    attendance = AttendanceService(db_path)
+
+    sid1 = students.save_student(None, "Satu", 1, {}, paket="A")
+    sid2 = students.save_student(None, "Dua", 2, {}, paket="B")
+    assert len(students.list_students()) == 2
+
+    # Delete student
+    students.delete_student(sid1)
+    remaining = students.list_students()
+    assert len(remaining) == 1
+    assert remaining[0]["id"] == sid2
+
+    # Reset all data
+    reset_all_data(db_path)
+    assert len(students.list_students()) == 0
+

@@ -8,11 +8,11 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
-from app.db import connect
+from app.db import connect, reset_all_data
 from app.services.students import StudentService
 from app.services.excel_io import export_workbook, preview_students, student_template
 from app.services.reports import ReportService
-from app.runtime import DB_PATH, backup_database, last_backup, schedule_shutdown
+from app.runtime import DB_PATH, backup_database, check_usb_scanner_connected, last_backup, schedule_shutdown
 
 students = StudentService(DB_PATH)
 reports = ReportService(DB_PATH)
@@ -27,7 +27,7 @@ class RegisterCardRequest(BaseModel):
 def local_only(request: Request) -> None:
     host = request.client.host if request.client else ""
     if host not in {"127.0.0.1", "::1"}:
-        raise HTTPException(403, "Halaman ini hanya bisa dibuka dari laptop admin.")
+        raise HTTPException(403, "Halaman ini hanya bisa dibuka dari pc admin.")
 
 
 def context(request: Request, **values: Any) -> dict[str, Any]:
@@ -38,8 +38,8 @@ def today_data() -> dict[str, Any]:
     today = datetime.now().astimezone().date().isoformat()
     with connect(DB_PATH) as connection:
         rows = connection.execute(
-            "SELECT s.id, s.nomor_urut, s.nama, s.aktif, a.id AS absensi_id, a.tanggal, "
-            "a.waktu, a.status, a.sumber, a.catatan "
+            "SELECT s.id, s.nomor_urut, s.nama, s.paket, s.aktif, a.id AS absensi_id, a.tanggal, "
+            "a.waktu, a.waktu_pulang, a.status_pulang, a.denda_menit, a.status, a.sumber, a.catatan "
             "FROM santri s LEFT JOIN absensi a ON a.santri_id = s.id AND a.tanggal = ? "
             "ORDER BY s.nomor_urut, s.nama",
             (today,),
@@ -52,13 +52,18 @@ def today_data() -> dict[str, Any]:
             (today,),
         ).fetchone()[0]
     present = [row for row in rows if row["status"] == "Hadir"]
+    picked_up = [row for row in rows if row["waktu_pulang"] is not None]
+    denda_list = [row for row in rows if (row["denda_menit"] or 0) > 0]
     absent = [row for row in rows if row["aktif"] and row["status"] is None]
     return {
         "rows": rows,
         "present_count": len(present),
+        "picked_up_count": len(picked_up),
+        "denda_count": len(denda_list),
         "active_count": active_count,
         "tap_count": tap_count,
         "absent": absent,
+        "scanner_hardware": check_usb_scanner_connected(),
     }
 
 
@@ -100,9 +105,21 @@ async def save_manual(
     status: str = Form(...),
     waktu: str = Form(""),
     catatan: str = Form(""),
+    waktu_pulang: str = Form(""),
+    status_pulang: str = Form(""),
+    denda_menit: int = Form(0),
 ):
     local_only(request)
-    reports.save_manual(student_id, tanggal, status, waktu, catatan)
+    reports.save_manual(
+        student_id=student_id,
+        tanggal=tanggal,
+        status=status,
+        waktu=waktu,
+        catatan=catatan,
+        waktu_pulang=waktu_pulang or None,
+        status_pulang=status_pulang or None,
+        denda_menit=denda_menit,
+    )
     return RedirectResponse("/admin/hari-ini", status_code=303)
 
 
@@ -258,12 +275,13 @@ async def add_student(
     request: Request,
     nama: str = Form(...),
     nomor_urut: str = Form(""),
+    paket: str = Form("A"),
 ):
     local_only(request)
     data = await request.form()
     extra = {field["field_key"]: str(data.get(field["field_key"], "")) for field in students.fields(True)}
     number = int(nomor_urut) if nomor_urut.strip().isdigit() else None
-    students.save_student(None, nama, number, extra)
+    students.save_student(None, nama, number, extra, paket=paket)
     return RedirectResponse("/admin/santri", status_code=303)
 
 
@@ -273,12 +291,23 @@ async def edit_student(
     student_id: int,
     nama: str = Form(...),
     nomor_urut: str = Form(""),
+    paket: str = Form("A"),
 ):
     local_only(request)
     data = await request.form()
     extra = {field["field_key"]: str(data.get(field["field_key"], "")) for field in students.fields(True)}
     number = int(nomor_urut) if nomor_urut.strip().isdigit() else None
-    students.save_student(student_id, nama, number, extra)
+    students.save_student(student_id, nama, number, extra, paket=paket)
+    return RedirectResponse("/admin/santri", status_code=303)
+
+
+@router.post("/admin/santri/{student_id}/hapus")
+async def delete_student(request: Request, student_id: int):
+    local_only(request)
+    student = students.get_student(student_id)
+    if not student:
+        raise HTTPException(404, "Murid tidak ditemukan.")
+    students.delete_student(student_id)
     return RedirectResponse("/admin/santri", status_code=303)
 
 
@@ -287,7 +316,7 @@ async def toggle_student(request: Request, student_id: int):
     local_only(request)
     student = students.get_student(student_id)
     if not student:
-        raise HTTPException(404, "Santri tidak ditemukan.")
+        raise HTTPException(404, "Murid tidak ditemukan.")
     students.set_active(student_id, not student["aktif"])
     return RedirectResponse("/admin/santri", status_code=303)
 
@@ -305,12 +334,17 @@ async def register_card(request: Request, student_id: int):
 
 
 @router.get("/admin/fields", response_class=HTMLResponse)
-async def fields_page(request: Request):
+async def fields_page(request: Request, reset: str = ""):
     local_only(request)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="admin/fields.html",
-        context=context(request, fields=students.fields(), backup_terakhir=last_backup(DB_PATH)),
+        context=context(
+            request,
+            fields=students.fields(),
+            backup_terakhir=last_backup(DB_PATH),
+            reset_sukses=(reset == "sukses"),
+        ),
     )
 
 
@@ -351,6 +385,19 @@ async def create_backup(request: Request):
     return RedirectResponse("/admin/fields", status_code=303)
 
 
+@router.post("/admin/reset-data")
+async def reset_data(request: Request, konfirmasi: str = Form("")):
+    local_only(request)
+    if konfirmasi.strip().upper() != "HAPUS":
+        raise HTTPException(400, "Konfirmasi gagal. Ketik kata HAPUS untuk mereset seluruh data.")
+    try:
+        backup_database(DB_PATH)
+    except Exception:
+        logging.getLogger("absensi_tpa").exception("Backup sebelum reset gagal.")
+    reset_all_data(DB_PATH)
+    return RedirectResponse("/admin/fields?reset=sukses", status_code=303)
+
+
 @router.post("/admin/matikan")
 async def stop_application(request: Request):
     local_only(request)
@@ -359,6 +406,12 @@ async def stop_application(request: Request):
         "<!doctype html><meta charset='utf-8'><title>Absensi TPA</title>"
         "<p>Aplikasi sedang dimatikan. Jendela ini boleh ditutup.</p>"
     )
+
+
+@router.get("/api/admin/scanner-hardware")
+async def scanner_hardware(request: Request):
+    local_only(request)
+    return check_usb_scanner_connected()
 
 
 @router.get("/api/admin/status")

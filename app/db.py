@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from typing import Iterator
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 class ManagedConnection(sqlite3.Connection):
@@ -49,6 +49,7 @@ def initialize(db_path: Path) -> None:
                     nomor_urut INTEGER,
                     rfid_uid TEXT UNIQUE,
                     nama TEXT NOT NULL,
+                    paket TEXT NOT NULL DEFAULT 'A',
                     extra_data TEXT NOT NULL DEFAULT '{}',
                     aktif INTEGER NOT NULL DEFAULT 1,
                     created_at TEXT
@@ -58,6 +59,9 @@ def initialize(db_path: Path) -> None:
                     santri_id INTEGER NOT NULL REFERENCES santri(id),
                     tanggal TEXT NOT NULL,
                     waktu TEXT,
+                    waktu_pulang TEXT,
+                    status_pulang TEXT,
+                    denda_menit INTEGER DEFAULT 0,
                     status TEXT NOT NULL DEFAULT 'Hadir',
                     sumber TEXT NOT NULL DEFAULT 'kartu',
                     catatan TEXT,
@@ -77,11 +81,39 @@ def initialize(db_path: Path) -> None:
                     key TEXT PRIMARY KEY,
                     value TEXT
                 );
-                INSERT INTO schema_version (version) VALUES (1);
+                INSERT INTO schema_version (version) VALUES (2);
                 """
             )
-        elif current["version"] > SCHEMA_VERSION:
-            raise RuntimeError("Versi database lebih baru dari aplikasi.")
+        else:
+            # Migrasi skema jika tabel sudah ada dari versi sebelumnya
+            santri_cols = {row["name"] for row in connection.execute("PRAGMA table_info(santri)").fetchall()}
+            if "paket" not in santri_cols:
+                connection.execute("ALTER TABLE santri ADD COLUMN paket TEXT NOT NULL DEFAULT 'A'")
+
+            absensi_cols = {row["name"] for row in connection.execute("PRAGMA table_info(absensi)").fetchall()}
+            if "waktu_pulang" not in absensi_cols:
+                connection.execute("ALTER TABLE absensi ADD COLUMN waktu_pulang TEXT")
+            if "status_pulang" not in absensi_cols:
+                connection.execute("ALTER TABLE absensi ADD COLUMN status_pulang TEXT")
+            if "denda_menit" not in absensi_cols:
+                connection.execute("ALTER TABLE absensi ADD COLUMN denda_menit INTEGER DEFAULT 0")
+
+            if current["version"] < SCHEMA_VERSION:
+                connection.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
+            elif current["version"] > SCHEMA_VERSION:
+                raise RuntimeError("Versi database lebih baru dari aplikasi.")
+
+
+def reset_all_data(db_path: Path) -> None:
+    with connect(db_path) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute("DELETE FROM tap_log")
+        connection.execute("DELETE FROM absensi")
+        connection.execute("DELETE FROM santri")
+        connection.execute("DELETE FROM custom_fields")
+        connection.execute("DELETE FROM pengaturan")
+        connection.execute("DELETE FROM sqlite_sequence WHERE name IN ('santri', 'absensi', 'tap_log', 'custom_fields')")
+        connection.commit()
 
 
 def get_setting(connection: sqlite3.Connection, key: str) -> str | None:

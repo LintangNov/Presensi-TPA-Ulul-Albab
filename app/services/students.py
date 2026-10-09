@@ -73,21 +73,23 @@ class StudentService:
         name: str,
         number: int | None,
         extra_data: dict[str, str],
+        paket: str = "A",
     ) -> int:
         if not name.strip():
-            raise ValueError("Nama santri wajib diisi.")
+            raise ValueError("Nama murid wajib diisi.")
+        paket_val = paket.strip().upper() if paket and paket.strip().upper() in {"A", "B"} else "A"
         payload = json.dumps(extra_data, ensure_ascii=False)
         with connect(self.db_path) as connection:
             if student_id:
                 connection.execute(
-                    "UPDATE santri SET nomor_urut = ?, nama = ?, extra_data = ? WHERE id = ?",
-                    (number, name.strip(), payload, student_id),
+                    "UPDATE santri SET nomor_urut = ?, nama = ?, extra_data = ?, paket = ? WHERE id = ?",
+                    (number, name.strip(), payload, paket_val, student_id),
                 )
                 return student_id
             cursor = connection.execute(
-                "INSERT INTO santri (nomor_urut, nama, extra_data, created_at) "
-                "VALUES (?, ?, ?, ?)",
-                (number, name.strip(), payload, now_local().isoformat(timespec="seconds")),
+                "INSERT INTO santri (nomor_urut, nama, extra_data, paket, created_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (number, name.strip(), payload, paket_val, now_local().isoformat(timespec="seconds")),
             )
             return int(cursor.lastrowid)
 
@@ -98,6 +100,14 @@ class StudentService:
                 (int(active), student_id),
             )
 
+    def delete_student(self, student_id: int) -> None:
+        with connect(self.db_path) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute("DELETE FROM tap_log WHERE santri_id = ?", (student_id,))
+            connection.execute("DELETE FROM absensi WHERE santri_id = ?", (student_id,))
+            connection.execute("DELETE FROM santri WHERE id = ?", (student_id,))
+            connection.commit()
+
     def register_card(self, student_id: int, uid: str) -> dict[str, Any]:
         normalized = normalize_uid(uid)
         if not normalized:
@@ -107,13 +117,13 @@ class StudentService:
                 "SELECT id, nama, nomor_urut FROM santri WHERE id = ?", (student_id,)
             ).fetchone()
             if student is None:
-                raise LookupError("Santri tidak ditemukan.")
+                raise LookupError("Murid tidak ditemukan.")
             owner = connection.execute(
                 "SELECT id FROM santri WHERE rfid_uid = ? AND id != ?",
                 (normalized, student_id),
             ).fetchone()
             if owner:
-                raise ValueError("Kartu sudah dipakai santri lain.")
+                raise ValueError("Kartu sudah dipakai murid lain.")
             connection.execute(
                 "UPDATE santri SET rfid_uid = ? WHERE id = ?",
                 (normalized, student_id),
@@ -131,11 +141,13 @@ class StudentService:
             extra = json.loads(row["extra_data"] or "{}")
         except json.JSONDecodeError:
             extra = {}
+        row_keys = row.keys() if hasattr(row, "keys") else []
         return {
             "id": row["id"],
             "nomor_urut": row["nomor_urut"],
             "rfid_uid": row["rfid_uid"],
             "nama": row["nama"],
+            "paket": row["paket"] if "paket" in row_keys else "A",
             "extra_data": extra,
             "aktif": bool(row["aktif"]),
         }

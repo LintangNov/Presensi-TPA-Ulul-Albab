@@ -23,7 +23,19 @@ def export_workbook(
     detail = workbook.active
     detail.title = "Rekap"
     field_headers = [field["field_label"] for field in fields]
-    headers = ["Tanggal", "Nomor", "Nama", "Jam", "Status", "Sumber", "Catatan"] + field_headers
+    headers = [
+        "Tanggal",
+        "Nomor",
+        "Nama",
+        "Paket",
+        "Jam Masuk",
+        "Jam Pulang",
+        "Status Pulang",
+        "Denda (Menit)",
+        "Status",
+        "Sumber",
+        "Catatan",
+    ] + field_headers
     detail.append(headers)
     for cell in detail[1]:
         cell.font = Font(bold=True)
@@ -31,13 +43,17 @@ def export_workbook(
         extra = row.get("extra_data") or {}
         detail.append(
             [
-                row["tanggal"],
-                row["nomor_urut"],
-                row["nama"],
-                row["waktu"],
-                row["status"],
-                row["sumber"],
-                row["catatan"],
+                row.get("tanggal", ""),
+                row.get("nomor_urut", ""),
+                row.get("nama", ""),
+                row.get("paket", "A"),
+                row.get("waktu", "") or "-",
+                row.get("waktu_pulang", "") or "-",
+                row.get("status_pulang", "") or "-",
+                row.get("denda_menit", 0),
+                row.get("status", ""),
+                row.get("sumber", ""),
+                row.get("catatan", "") or "",
             ]
             + [extra.get(field["field_key"], "") for field in fields]
         )
@@ -62,8 +78,8 @@ def export_workbook(
 def student_template(fields: list[Any]) -> bytes:
     workbook = Workbook()
     sheet = workbook.active
-    sheet.title = "Santri"
-    headers = ["Nomor", "Nama"] + [field["field_label"] for field in fields]
+    sheet.title = "Murid"
+    headers = ["Nomor", "Nama", "Paket"] + [field["field_label"] for field in fields]
     sheet.append(headers)
     for cell in sheet[1]:
         cell.font = Font(bold=True)
@@ -90,6 +106,12 @@ def preview_students(content: bytes, fields: list[Any]) -> dict[str, Any]:
             continue
         name = str(values[indexes["Nama"]]).strip() if values[indexes["Nama"]] is not None else ""
         number = values[indexes["Nomor"]]
+        paket_val = "A"
+        if "Paket" in indexes and values[indexes["Paket"]]:
+            raw_p = str(values[indexes["Paket"]]).strip().upper()
+            if raw_p in {"A", "B"}:
+                paket_val = raw_p
+
         if not name:
             problems.append(f"Baris {row_number}: nama wajib diisi.")
             continue
@@ -103,5 +125,10 @@ def preview_students(content: bytes, fields: list[Any]) -> dict[str, Any]:
             for field in fields
             if field["field_label"] in indexes
         }
-        rows.append({"nama": name, "nomor_urut": int(number) if number not in (None, "") else None, "extra_data": extra})
+        rows.append({
+            "nama": name,
+            "nomor_urut": int(number) if number not in (None, "") else None,
+            "paket": paket_val,
+            "extra_data": extra,
+        })
     return {"rows": rows, "problems": problems}

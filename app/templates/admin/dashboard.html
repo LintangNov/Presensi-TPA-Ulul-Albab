@@ -1,11 +1,83 @@
 {% extends "admin/base.html" %}
 {% block content %}
-<h2>Dashboard</h2>
-<p>Scanner USB terhubung langsung ke komputer ini.</p>
-<p><a href="/scan" target="_blank" rel="noopener"><button type="button">Buka Jendela Scanner</button></a></p>
-<section class="summary-grid">
-  <article><strong>{{ present_count }}</strong><span>Hadir hari ini</span></article>
-  <article><strong>{{ active_count }}</strong><span>Santri aktif</span></article>
-  <article><strong>{{ tap_count }}</strong><span>Tap hari ini</span></article>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h2 style="margin: 0;">Dashboard Pengurus TPA</h2>
+    <p style="margin: 0; color: #718096; font-size: 0.95rem;">Pusat kendali absensi harian dan status scanner USB.</p>
+  </div>
+  <div>
+    <a href="/scan" target="_blank" rel="noopener">
+      <button type="button" class="btn-sm" style="background: #2b6cb0; color: #fff; border-color: #2b6cb0;">
+        Buka Display Scanner
+      </button>
+    </a>
+  </div>
+</div>
+
+<!-- Kartu Kontrol Scanner USB (Dinamis & Real-time) -->
+<section class="dashboard-scanner-card">
+  <div class="scanner-ctrl-header">
+    <div class="scanner-ctrl-left">
+      <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <h3 style="margin: 0; font-size: 1.15rem; color: #2d3748;">Status Scanner USB</h3>
+          <span id="scanner-hardware-status" class="hw-badge {% if scanner_hardware.connected %}connected{% else %}disconnected{% endif %}">
+            {{ scanner_hardware.details }}
+          </span>
+        </div>
+        <p style="margin: 0; font-size: 0.85rem; color: #718096;">
+          Scanner USB standby menangkap kartu di latar belakang halaman ini. Tab scanner hanya bertindak sebagai penampil absensi.
+        </p>
+      </div>
+    </div>
+    <div class="scanner-ctrl-right scanner-toggle-box" id="scanner-toggle-container">
+      <div style="text-align: right;">
+        <span style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #718096; font-weight: 700;">Scanner</span>
+        <span id="dashboard-scanner-status" class="scanner-operational-status" style="font-size: 0.95rem; font-weight: 700; color: #2d3748;">Memuat…</span>
+      </div>
+      <label class="switch-toggle" title="Aktifkan / Matikan Scanner Manual">
+        <input type="checkbox" id="scanner-toggle" checked>
+        <span class="switch-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div style="background: rgba(237, 242, 247, 0.6); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #4a5568; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+    <span><strong>Info Scanner:</strong> Pastikan tab ini tetap terbuka di pc admin agar scanner selalu siap memproses tap kartu murid.</span>
+    <span>Jam Operasional: <strong>Masuk 06:30</strong> | <strong>Paket Half Day 06.30 - 13:00</strong> | <strong>Paket Full Day 06.30 - 16:00</strong></span>
+  </div>
+</section>
+
+<!-- Statistik Absensi & Penjemputan TPA Hari Ini -->
+<section class="summary-grid" style="margin-bottom: 2rem;">
+  <article>
+    <strong>{{ present_count }}</strong>
+    <span>Hadir Masuk</span>
+  </article>
+  <article>
+    <strong style="color: #2b6cb0;">{{ picked_up_count }}</strong>
+    <span>Sudah Dijemput</span>
+  </article>
+  <article>
+    <strong style="color: {% if denda_count > 0 %}#c53030{% else %}#4a5568{% endif %};">{{ denda_count }}</strong>
+    <span>Denda Penjemputan</span>
+  </article>
+  <article>
+    <strong>{{ active_count }}</strong>
+    <span>Total Murid Aktif</span>
+  </article>
+</section>
+
+<!-- Riwayat Tap Terkini di Dashboard -->
+<section class="settings-card" style="margin-top: 1rem;">
+  <div class="settings-card-title">
+    <span>Aktivitas Tap Kartu Terkini</span>
+    <span style="font-size: 0.85rem; font-weight: normal; color: #718096;">Otomatis sinkron dengan TV LED</span>
+  </div>
+  <ul id="recent-tap-feed" class="feed-list">
+    <li class="feed-item" style="color: #718096; justify-content: center; font-style: italic;">
+      Menunggu tap kartu RFID... Tempelkan kartu pada reader USB.
+    </li>
+  </ul>
 </section>
 {% endblock %}

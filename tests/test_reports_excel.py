@@ -52,8 +52,8 @@ def test_export_round_trip_has_two_sheets_and_custom_field(tmp_path):
     workbook = load_workbook(BytesIO(content), data_only=True)
     assert workbook.sheetnames == ["Rekap", "Ringkasan"]
     assert workbook["Rekap"].freeze_panes == "A2"
-    assert workbook["Rekap"]["H1"].value == "Nama Wali"
-    assert workbook["Rekap"]["H2"].value == "Ibu Alya"
+    assert workbook["Rekap"]["L1"].value == "Nama Wali"
+    assert workbook["Rekap"]["L2"].value == "Ibu Alya"
     assert workbook["Ringkasan"]["D2"].value == 0
 
 

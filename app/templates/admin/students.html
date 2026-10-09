@@ -1,67 +1,275 @@
 {% extends "admin/base.html" %}
 {% block content %}
-<h2>Data Santri</h2>
-<form method="get" action="/admin/santri"><input name="q" value="{{ search }}" placeholder="Cari nama atau nomor"><button type="submit">Cari</button></form>
-<p class="notice">Tambahkan santri terlebih dahulu. Setelah tersimpan, tombol <strong>Daftarkan Kartu</strong> tersedia pada baris santri tersebut.</p>
-<details id="tambah-santri" open><summary><strong>Tambah santri</strong></summary>
-<form method="post" action="/admin/santri">
-  <label>Nama <input name="nama" required></label><label>Nomor urut <input name="nomor_urut" type="number"></label>
-  {% for field in fields %}<label>{{ field.field_label }} <input name="{{ field.field_key }}"></label>{% endfor %}
-  <button type="submit">Simpan santri</button>
-</form></details>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h2 style="margin: 0;">Data Murid TPA</h2>
+    <p style="margin: 0; color: #718096; font-size: 0.95rem;">Kelola data anak, paket penitipan (Half Day / Full Day), kartu RFID, dan status aktif.</p>
+  </div>
+</div>
+
+<form method="get" action="/admin/santri" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
+  <input name="q" value="{{ search }}" placeholder="Cari nama atau nomor urut murid..." style="max-width: 320px;">
+  <button type="submit" class="btn-sm">Cari</button>
+  {% if search %}
+  <a href="/admin/santri"><button type="button" class="btn-sm btn-secondary">Reset</button></a>
+  {% endif %}
+</form>
+
+<details id="tambah-santri" style="margin-bottom: 1.5rem;" open>
+  <summary style="cursor: pointer; font-weight: 700;">➕ Tambah Murid Baru</summary>
+  <form method="post" action="/admin/santri" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+    <label>Nama Lengkap <input name="nama" placeholder="Contoh: Muhammad Andi" required></label>
+    <label>Nomor Urut / Absen <input name="nomor_urut" type="number" placeholder="Contoh: 1"></label>
+    <label>Paket Penitipan
+      <select name="paket" required>
+        <option value="A">Paket A (Half Day - Maks 13:00)</option>
+        <option value="B">Paket B (Full Day - Maks 16:00)</option>
+      </select>
+    </label>
+    {% for field in fields %}
+    <label>{{ field.field_label }} <input name="{{ field.field_key }}" placeholder="{{ field.field_label }}"></label>
+    {% endfor %}
+    <div style="grid-column: 1 / -1;">
+      <button type="submit" class="btn-sm" style="min-width: 140px;">Simpan Murid</button>
+    </div>
+  </form>
+</details>
+
 {% if not students %}
-<p class="notice">Belum ada data santri. Simpan santri baru di bagian <a href="#tambah-santri">Tambah santri</a> untuk mulai mendaftarkan kartu.</p>
+<p class="notice">Belum ada data murid yang sesuai. Tambahkan murid baru di atas untuk mulai mendaftarkan kartu RFID.</p>
 {% endif %}
-<table><thead><tr><th>No</th><th>Nama</th><th>RFID</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>
-{% for student in students %}
-<tr><td>{{ student.nomor_urut or "-" }}</td><td>{{ student.nama }}</td><td>{{ student.rfid_uid or "Belum dipasangkan" }}</td><td>{{ "Aktif" if student.aktif else "Tidak aktif" }}</td><td>
-  <details><summary>Edit</summary><form method="post" action="/admin/santri/{{ student.id }}"><label>Nama <input name="nama" value="{{ student.nama }}" required></label><label>Nomor urut <input name="nomor_urut" type="number" value="{{ student.nomor_urut or '' }}"></label>{% for field in fields %}<label>{{ field.field_label }} <input name="{{ field.field_key }}" value="{{ student.extra_data.get(field.field_key, '') }}"></label>{% endfor %}<button type="submit">Simpan perubahan</button></form></details>
-  <button type="button" data-register-student="{{ student.id }}" data-register-name="{{ student.nama }}">Daftarkan Kartu</button>
-  <form method="post" action="/admin/santri/{{ student.id }}/aktif"><button type="submit">{{ "Nonaktifkan" if student.aktif else "Aktifkan" }}</button></form>
-</td></tr>
-{% endfor %}</tbody></table>
+
+{% if students %}
+<table>
+  <thead>
+    <tr>
+      <th style="width: 60px;">No</th>
+      <th>Nama Murid</th>
+      <th>Paket</th>
+      <th>RFID UID</th>
+      <th>Status</th>
+      <th style="min-width: 280px;">Tindakan</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for student in students %}
+    <tr>
+      <td><strong>{{ student.nomor_urut or "-" }}</strong></td>
+      <td><strong>{{ student.nama }}</strong></td>
+      <td>
+        <span class="badge" style="background: {% if student.paket == 'B' %}#c6f6d5{% else %}#e2e8f0{% endif %}; font-size: 0.8rem;">
+          {{ "Paket A (Half Day)" if student.paket == "A" else "Paket B (Full Day)" }}
+        </span>
+      </td>
+      <td>
+        {% if student.rfid_uid %}
+        <code style="font-weight: 600; color: #2b6cb0;">{{ student.rfid_uid }}</code>
+        {% else %}
+        <span style="color: #a0aec0; font-size: 0.85rem; font-style: italic;">Belum dipasangkan</span>
+        {% endif %}
+      </td>
+      <td>
+        <span class="badge {{ 'success' if student.aktif else 'inactive' }}" style="font-size: 0.8rem;">
+          {{ "Aktif" if student.aktif else "Nonaktif" }}
+        </span>
+      </td>
+      <td>
+        <div class="btn-group">
+          <button 
+            type="button" 
+            class="btn-sm" 
+            data-register-student="{{ student.id }}" 
+            data-register-name="{{ student.nama }}"
+            data-register-no="{{ student.nomor_urut or '-' }}"
+            data-register-paket="{{ 'Paket A (Half Day)' if student.paket == 'A' else 'Paket B (Full Day)' }}"
+            title="Daftarkan / Ganti Kartu RFID"
+          >
+            💳 Daftarkan Kartu
+          </button>
+
+          <details style="display: inline-block; margin: 0; padding: 0; border: none; background: transparent;">
+            <summary class="btn-sm btn-secondary" style="list-style: none; cursor: pointer;">✏️ Edit</summary>
+            <div style="position: absolute; right: 2rem; background: #fff; border: 1px solid #cbd5e0; border-radius: 10px; padding: 1.25rem; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 50; width: 320px;">
+              <h4 style="margin: 0 0 1rem 0; font-size: 1rem;">Edit Murid: {{ student.nama }}</h4>
+              <form method="post" action="/admin/santri/{{ student.id }}" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <label>Nama <input name="nama" value="{{ student.nama }}" required></label>
+                <label>Nomor Urut <input name="nomor_urut" type="number" value="{{ student.nomor_urut or '' }}"></label>
+                <label>Paket
+                  <select name="paket">
+                    <option value="A" {% if student.paket == 'A' %}selected{% endif %}>Paket A (Half Day)</option>
+                    <option value="B" {% if student.paket == 'B' %}selected{% endif %}>Paket B (Full Day)</option>
+                  </select>
+                </label>
+                {% for field in fields %}
+                <label>{{ field.field_label }} <input name="{{ field.field_key }}" value="{{ student.extra_data.get(field.field_key, '') }}"></label>
+                {% endfor %}
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
+                  <button type="submit" class="btn-sm">Simpan</button>
+                </div>
+              </form>
+            </div>
+          </details>
+
+          <form method="post" action="/admin/santri/{{ student.id }}/aktif" style="margin: 0; display: inline;">
+            <button type="submit" class="btn-sm btn-secondary" title="{{ 'Nonaktifkan murid' if student.aktif else 'Aktifkan murid' }}">
+              {{ "Nonaktifkan" if student.aktif else "Aktifkan" }}
+            </button>
+          </form>
+
+          <button 
+            type="button" 
+            class="btn-sm btn-danger" 
+            data-delete-student="{{ student.id }}" 
+            data-delete-name="{{ student.nama }}"
+            title="Hapus Murid"
+          >
+            🗑️ Hapus
+          </button>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty-table-notice">Data murid belum ada. Tambahkan murid baru di atas untuk mulai mendaftarkan kartu RFID.</p>
+{% endif %}
+
+<!-- Dialog Daftarkan Kartu (Tata Letak Bersih & Rapi) -->
 <dialog id="register-dialog">
-  <form method="dialog"><button aria-label="Tutup">Tutup</button></form>
-  <h3>Daftarkan Kartu</h3>
-  <p id="register-student-name"></p>
-  <input id="register-uid" autocomplete="off" aria-label="Kartu RFID" autofocus>
-  <p id="register-message" role="status">Tempelkan kartu pada reader USB.</p>
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Daftarkan Kartu RFID</h3>
+      <button type="button" class="modal-close-btn" id="btn-close-register" aria-label="Tutup Dialog">✕</button>
+    </div>
+
+    <div class="modal-student-badge">
+      <p id="register-student-name" class="modal-student-name"></p>
+      <p id="register-student-meta" class="modal-student-meta"></p>
+    </div>
+
+    <div class="rfid-scan-indicator">
+      <div class="rfid-pulse-icon">📶</div>
+      <p id="register-message" style="margin: 0; font-size: 0.9rem; color: #4a5568; text-align: center; font-weight: 500;">
+        Tempelkan kartu RFID pada reader USB...
+      </p>
+    </div>
+
+    <div>
+      <input 
+        id="register-uid" 
+        autocomplete="off" 
+        aria-label="Input scan RFID" 
+        placeholder="Menunggu scan kartu..." 
+        style="width: 100%; text-align: center; font-weight: 700; letter-spacing: 0.05em; border: 2px solid #cbd5e0; border-radius: 8px; font-size: 1.05rem;"
+      >
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+      <button type="button" id="btn-cancel-register" class="btn-sm btn-secondary">Batal</button>
+    </div>
+  </div>
 </dialog>
+
+<!-- Dialog Konfirmasi Hapus Murid (Double Guard) -->
+<dialog id="delete-confirm-dialog">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 style="color: #c53030;">Konfirmasi Hapus Murid</h3>
+      <button type="button" class="modal-close-btn" id="btn-close-delete" aria-label="Tutup Dialog">✕</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+      <p style="margin: 0; color: #4a5568;">
+        Apakah Anda yakin ingin menghapus murid <strong id="delete-student-name-text" style="color: #1a202c;"></strong>?
+      </p>
+      <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; padding: 0.75rem; font-size: 0.85rem; color: #9b2c2c;">
+        ⚠️ <strong>Perhatian:</strong> Seluruh riwayat absensi dan log tap terkait murid ini akan terhapus secara permanen.
+      </div>
+    </div>
+    <form id="delete-student-form" method="post" style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+      <button type="button" id="btn-cancel-delete" class="btn-sm btn-secondary">Batal</button>
+      <button type="submit" class="btn-sm btn-danger">Ya, Hapus Murid</button>
+    </form>
+  </div>
+</dialog>
+
 <script>
+  // Script Dialog Daftarkan Kartu
   const registerDialog = document.querySelector("#register-dialog");
   const registerUid = document.querySelector("#register-uid");
+  const registerName = document.querySelector("#register-student-name");
+  const registerMeta = document.querySelector("#register-student-meta");
   const registerMessage = document.querySelector("#register-message");
-  let registerStudentId;
+  let registerStudentId = null;
+
   document.querySelectorAll("[data-register-student]").forEach((button) => {
     button.addEventListener("click", () => {
       registerStudentId = button.dataset.registerStudent;
-      document.querySelector("#register-student-name").textContent = button.dataset.registerName;
+      registerName.textContent = button.dataset.registerName;
+      registerMeta.textContent = `No. Absen #${button.dataset.registerNo} • ${button.dataset.registerPaket}`;
       registerUid.value = "";
-      registerMessage.textContent = "Tempelkan kartu pada reader USB.";
+      registerMessage.textContent = "Tempelkan kartu RFID pada reader USB...";
+      registerMessage.style.color = "#4a5568";
       registerDialog.showModal();
       registerUid.focus();
     });
   });
+
+  const closeRegister = () => {
+    registerDialog.close();
+    registerStudentId = null;
+  };
+  document.querySelector("#btn-close-register").addEventListener("click", closeRegister);
+  document.querySelector("#btn-cancel-register").addEventListener("click", closeRegister);
+
   registerUid.addEventListener("keydown", async (event) => {
     if (event.key !== "Enter") return;
     event.preventDefault();
-    const uid = registerUid.value;
+    const uid = registerUid.value.trim();
     registerUid.value = "";
     if (!uid) return;
+
+    registerMessage.textContent = "Memproses pendaftaran kartu...";
     try {
       const response = await fetch(`/api/admin/santri/${registerStudentId}/daftar-kartu`, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({uid}),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || "Kartu tidak dapat didaftarkan.");
-      window.alert(`[OK] Kartu ${result.uid} berhasil terdaftar untuk ${result.nama}.`);
-      registerDialog.close();
+      
+      registerMessage.textContent = `[OK] Kartu ${result.uid} berhasil dipasangkan ke ${result.nama}!`;
+      registerMessage.style.color = "#276749";
+
+      setTimeout(() => {
+        closeRegister();
+        window.location.reload();
+      }, 900);
     } catch (error) {
       registerMessage.textContent = error.message;
+      registerMessage.style.color = "#c53030";
       registerUid.focus();
     }
   });
+
+  // Script Dialog Hapus Murid
+  const deleteDialog = document.querySelector("#delete-confirm-dialog");
+  const deleteNameText = document.querySelector("#delete-student-name-text");
+  const deleteForm = document.querySelector("#delete-student-form");
+
+  document.querySelectorAll("[data-delete-student]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = button.dataset.deleteStudent;
+      const name = button.dataset.deleteName;
+      deleteNameText.textContent = name;
+      deleteForm.action = `/admin/santri/${id}/hapus`;
+      deleteDialog.showModal();
+    });
+  });
+
+  const closeDelete = () => deleteDialog.close();
+  document.querySelector("#btn-close-delete").addEventListener("click", closeDelete);
+  document.querySelector("#btn-cancel-delete").addEventListener("click", closeDelete);
 </script>
 {% endblock %}

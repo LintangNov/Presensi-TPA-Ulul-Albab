@@ -28,8 +28,8 @@ class ReportService:
             params.append(status)
         with connect(self.db_path) as connection:
             rows = connection.execute(
-                "SELECT a.tanggal, s.nomor_urut, s.nama, a.waktu, a.status, "
-                "a.sumber, a.catatan, s.id AS santri_id, s.extra_data "
+                "SELECT a.tanggal, s.nomor_urut, s.nama, s.paket, a.waktu, a.waktu_pulang, a.status_pulang, a.denda_menit, "
+                "a.status, a.sumber, a.catatan, s.id AS santri_id, s.extra_data "
                 "FROM absensi a JOIN santri s ON s.id = a.santri_id "
                 f"WHERE {' AND '.join(clauses)} ORDER BY a.tanggal, s.nomor_urut, s.nama",
                 params,
@@ -42,7 +42,7 @@ class ReportService:
                 ).fetchall()
             }
             active_students = connection.execute(
-                "SELECT id, nomor_urut, nama, extra_data FROM santri WHERE aktif = 1"
+                "SELECT id, nomor_urut, nama, paket, extra_data FROM santri WHERE aktif = 1"
                 + (" AND id = ?" if student_id else ""),
                 (student_id,) if student_id else (),
             ).fetchall()
@@ -56,6 +56,8 @@ class ReportService:
         result = [dict(row) for row in rows]
         if not status or status == "Alpha":
             for student in active_students:
+                student_keys = student.keys() if hasattr(student, "keys") else []
+                paket_val = student["paket"] if "paket" in student_keys else "A"
                 for day in sorted(tpa_dates):
                     if (student["id"], day) not in recorded:
                         result.append(
@@ -63,7 +65,11 @@ class ReportService:
                                 "tanggal": day,
                                 "nomor_urut": student["nomor_urut"],
                                 "nama": student["nama"],
+                                "paket": paket_val,
                                 "waktu": None,
+                                "waktu_pulang": None,
+                                "status_pulang": None,
+                                "denda_menit": 0,
                                 "status": "Alpha",
                                 "sumber": "otomatis",
                                 "catatan": None,
@@ -125,16 +131,20 @@ class ReportService:
         status: str,
         waktu: str | None,
         catatan: str | None,
+        waktu_pulang: str | None = None,
+        status_pulang: str | None = None,
+        denda_menit: int = 0,
     ) -> None:
         if status not in {"Hadir", "Izin", "Sakit", "Alpha"}:
             raise ValueError("Status absensi tidak valid.")
         with connect(self.db_path) as connection:
             connection.execute(
-                "INSERT INTO absensi (santri_id, tanggal, waktu, status, sumber, catatan) "
-                "VALUES (?, ?, ?, ?, 'manual', ?) "
+                "INSERT INTO absensi (santri_id, tanggal, waktu, waktu_pulang, status_pulang, denda_menit, status, sumber, catatan) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 'manual', ?) "
                 "ON CONFLICT(santri_id, tanggal) DO UPDATE SET waktu=excluded.waktu, "
-                "status=excluded.status, sumber='manual', catatan=excluded.catatan",
-                (student_id, tanggal, waktu or None, status, catatan or None),
+                "waktu_pulang=excluded.waktu_pulang, status_pulang=excluded.status_pulang, "
+                "denda_menit=excluded.denda_menit, status=excluded.status, sumber='manual', catatan=excluded.catatan",
+                (student_id, tanggal, waktu or None, waktu_pulang or None, status_pulang or None, denda_menit, status, catatan or None),
             )
 
     def delete_manual(self, attendance_id: int) -> None:

@@ -4,13 +4,89 @@
 <form method="get" action="/admin/rekap" class="report-filters">
   <label>Mulai <input type="date" name="mulai" value="{{ mulai }}"></label>
   <label>Sampai <input type="date" name="sampai" value="{{ sampai }}"></label>
-  <label>Santri <select name="santri_id"><option value="">Semua santri</option>{% for student in students %}<option value="{{ student.id }}" {% if selected_student == student.id %}selected{% endif %}>{{ student.nama }}</option>{% endfor %}</select></label>
-  <label>Status <select name="status"><option value="">Semua status</option>{% for item in ["Hadir", "Izin", "Sakit", "Alpha"] %}<option {% if selected_status == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+  <label>Murid <select name="santri_id">
+      <option value="">Semua murid</option>{% for student in students %}<option value="{{ student.id }}" {% if
+        selected_student==student.id %}selected{% endif %}>{{ student.nama }}</option>{% endfor %}
+    </select></label>
+  <label>Status <select name="status">
+      <option value="">Semua status</option>{% for item in ["Hadir", "Izin", "Sakit", "Alpha"] %}<option {% if
+        selected_status==item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+    </select></label>
   <button type="submit">Tampilkan</button>
 </form>
-<p><a role="button" href="/admin/rekap/export.xlsx?mulai={{ mulai }}&sampai={{ sampai }}{% if selected_student %}&santri_id={{ selected_student }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">Unduh Excel (.xlsx)</a></p>
-<h3>Ringkasan per santri</h3>
-<table><thead><tr><th>Nomor</th><th>Nama</th><th>Hadir</th><th>Izin</th><th>Sakit</th><th>Alpha</th></tr></thead><tbody>{% for row in summary %}<tr><td>{{ row.nomor_urut or "-" }}</td><td>{{ row.nama }}</td><td>{{ row.Hadir }}</td><td>{{ row.Izin }}</td><td>{{ row.Sakit }}</td><td>{{ row.Alpha }}</td></tr>{% endfor %}</tbody></table>
-<h3>Rincian</h3>
-<table><thead><tr><th>Tanggal</th><th>Nomor</th><th>Nama</th><th>Jam</th><th>Status</th><th>Sumber</th><th>Catatan</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ row.tanggal }}</td><td>{{ row.nomor_urut or "-" }}</td><td>{{ row.nama }}</td><td>{{ row.waktu or "-" }}</td><td>{{ row.status }}</td><td>{{ row.sumber }}</td><td>{{ row.catatan or "" }}</td></tr>{% endfor %}</tbody></table>
+<p><a role="button"
+    href="/admin/rekap/export.xlsx?mulai={{ mulai }}&sampai={{ sampai }}{% if selected_student %}&santri_id={{ selected_student }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">Unduh
+    Excel (.xlsx)</a></p>
+<h3>Ringkasan per murid</h3>
+{% if summary %}
+<table>
+  <thead>
+    <tr>
+      <th>Nomor</th>
+      <th>Nama</th>
+      <th>Hadir</th>
+      <th>Izin</th>
+      <th>Sakit</th>
+      <th>Alpha</th>
+    </tr>
+  </thead>
+  <tbody>{% for row in summary %}<tr>
+      <td>{{ row.nomor_urut or "-" }}</td>
+      <td>{{ row.nama }}</td>
+      <td>{{ row.Hadir }}</td>
+      <td>{{ row.Izin }}</td>
+      <td>{{ row.Sakit }}</td>
+      <td>{{ row.Alpha }}</td>
+    </tr>{% endfor %}</tbody>
+</table>
+{% else %}
+<p class="empty-table-notice">Data ringkasan rekap belum ada untuk rentang tanggal yang dipilih.</p>
+{% endif %}
+<h3>Rincian Kehadiran</h3>
+{% if rows %}
+<table>
+  <thead>
+    <tr>
+      <th>Tanggal</th>
+      <th>Nomor</th>
+      <th>Nama</th>
+      <th>Paket</th>
+      <th>Jam Masuk</th>
+      <th>Jam Pulang</th>
+      <th>Status Pulang</th>
+      <th>Status Hadir</th>
+      <th>Sumber</th>
+      <th>Catatan</th>
+    </tr>
+  </thead>
+  <tbody>{% for row in rows %}<tr>
+      <td>{{ row.tanggal }}</td>
+      <td>{{ row.nomor_urut or "-" }}</td>
+      <td><strong>{{ row.nama }}</strong></td>
+      <td>
+        <span class="badge" style="background: {% if row.paket == 'B' %}#c6f6d5{% else %}#e2e8f0{% endif %}; font-size: 0.8rem;">
+          {{ "Paket A" if row.paket == "A" else "Paket B" }}
+        </span>
+      </td>
+      <td>{{ row.waktu or "-" }}</td>
+      <td>{{ row.waktu_pulang or "-" }}</td>
+      <td>
+        {% if row.status_pulang %}
+          {% if "Denda" in row.status_pulang %}
+            <span class="badge error" style="font-size: 0.8rem;">⚠️ {{ row.status_pulang }} ({{ row.denda_menit }} mnt)</span>
+          {% else %}
+            <span class="badge success" style="font-size: 0.8rem;">✓ {{ row.status_pulang }}</span>
+          {% endif %}
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td><span class="badge {{ 'success' if row.status == 'Hadir' else 'inactive' }}" style="font-size: 0.8rem;">{{ row.status }}</span></td>
+      <td>{{ row.sumber }}</td>
+      <td>{{ row.catatan or "" }}</td>
+    </tr>{% endfor %}</tbody>
+</table>
+{% else %}
+<p class="empty-table-notice">Data rincian kehadiran belum ada untuk rentang tanggal yang dipilih.</p>
+{% endif %}
 {% endblock %}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any
 
@@ -23,7 +24,25 @@ from app.runtime import (
 logger = configure_logging()
 SERVER_HOST = "127.0.0.1"
 
-app = FastAPI(title="Absensi TPA")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        path = backup_database(DB_PATH)
+        logger.info("Backup saat aplikasi mulai dibuat: %s", path)
+    except Exception:
+        logger.exception("Backup saat aplikasi mulai gagal.")
+    app.state.backup_task = asyncio.create_task(backup_loop(DB_PATH))
+
+    yield
+
+    task = app.state.backup_task
+    if task:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+    logger.info("Aplikasi dihentikan.")
+
+
+app = FastAPI(title="Absensi TPA", lifespan=lifespan)
 templates = Jinja2Templates(directory=str(RESOURCE_DIR / "app" / "templates"))
 app.mount("/static", StaticFiles(directory=str(RESOURCE_DIR / "app" / "static")), name="static")
 attendance = AttendanceService(DB_PATH)
@@ -51,7 +70,7 @@ def require_local_admin(request: Request) -> None:
     if client_address(request) not in {"127.0.0.1", "::1"}:
         raise HTTPException(
             status_code=403,
-            detail="Halaman ini hanya bisa dibuka dari laptop admin.",
+            detail="Halaman ini hanya bisa dibuka dari pc admin.",
         )
 
 
@@ -89,26 +108,6 @@ async def forbidden_handler(request: Request, exc: HTTPException) -> HTMLRespons
         context={"title": "Akses ditolak", "message": str(exc.detail)},
         status_code=403,
     )
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    try:
-        path = backup_database(DB_PATH)
-        logger.info("Backup saat aplikasi mulai dibuat: %s", path)
-    except Exception:
-        logger.exception("Backup saat aplikasi mulai gagal.")
-    app.state.backup_task = asyncio.create_task(backup_loop(DB_PATH))
-
-
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    task = app.state.backup_task
-    if task:
-        task.cancel()
-        await asyncio.gather(task, return_exceptions=True)
-    logger.info("Aplikasi dihentikan.")
-
 
 if __name__ == "__main__":
     import os
