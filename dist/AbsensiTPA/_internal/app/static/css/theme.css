@@ -87,6 +87,14 @@ body {
   color: var(--text);
 }
 
+.sidebar-nav a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 0.35rem solid var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
 /* Area Konten Utama */
 .admin-main {
   flex: 1;
@@ -710,9 +718,10 @@ dialog::backdrop {
 .switch-toggle {
   position: relative;
   display: inline-block;
-  width: 48px;
-  height: 26px;
+  width: 56px;
+  height: 30px;
   margin: 0;
+  flex-shrink: 0;
 }
 .switch-toggle input {
   opacity: 0;
@@ -723,9 +732,11 @@ dialog::backdrop {
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background-color: #cbd5e0;
+  background-color: var(--inactive);
+  border: 2px solid var(--text);
   transition: 0.3s;
-  border-radius: 26px;
+  border-radius: 30px;
+  box-shadow: var(--shadow-sm);
 }
 .switch-slider:before {
   position: absolute;
@@ -737,13 +748,29 @@ dialog::backdrop {
   background-color: white;
   transition: 0.3s;
   border-radius: 50%;
+  border: 1px solid var(--text);
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 input:checked + .switch-slider {
-  background-color: #38a169;
+  background-color: var(--success);
+  border-color: var(--text);
 }
 input:checked + .switch-slider:before {
-  transform: translateX(22px);
+  transform: translateX(26px);
+}
+/* Wadah toggle scanner di dashboard: background kontras */
+.scanner-toggle-box {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--primary-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.9rem;
+  box-shadow: var(--shadow-sm);
+}
+.scanner-toggle-box.is-off {
+  background: var(--inactive);
 }
 
 /* Status Indicator Dots */
@@ -823,4 +850,16 @@ input:checked + .switch-slider:before {
   background: #ffffff;
   border: 1px solid #edf2f7;
   font-size: 0.9rem;
+}
+
+/* Keterangan saat tabel belum ada isinya */
+.empty-table-notice {
+  background: var(--primary-soft);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0.75rem 0 1.25rem 0;
 }

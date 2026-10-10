@@ -33,6 +33,7 @@
       <button type="submit" class="btn-sm" style="margin: 0; min-height: 44px !important; height: 44px !important;">Tambah Kolom</button>
     </form>
 
+    {% if fields %}
     <table style="margin-top: 0.5rem;">
       <thead>
         <tr>
@@ -71,13 +72,12 @@
             </div>
           </td>
         </tr>
-        {% else %}
-        <tr>
-          <td colspan="5" style="text-align: center; color: #a0aec0; font-style: italic;">Belum ada kolom kustom tambahan.</td>
-        </tr>
         {% endfor %}
       </tbody>
     </table>
+    {% else %}
+    <p class="empty-table-notice">Data kolom kustom belum ada. Tambahkan kolom khusus di atas jika diperlukan.</p>
+    {% endif %}
   </div>
 
   <!-- Kategori 2: Pencadangan Database -->

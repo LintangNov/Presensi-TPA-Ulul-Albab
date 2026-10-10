@@ -1,0 +1,203 @@
+ABSENSI TPA ULUL ALBAB - CARA INSTALL & PANDUAN PENGGUNAAN
+======================================================
+Aplikasi absensi + penjemputan TPA (USB RFID reader, offline, PC Windows).
+Server hanya jalan di PC admin (http://127.0.0.1:8000). Tidak perlu internet,
+tidak perlu HP, tidak perlu Wi-Fi/hotspot.
+
+1. ISI PAKET YANG DIKIRIM
+-------------------------
+Kirim 3 item ini dalam 1 folder (contoh: D:\AbsensiTPA\):
+
+  AbsensiTPA-Paket\
+  |-- AbsensiTPA\              <- hasil copy dari dist\AbsensiTPA (PC pembuat)
+  |   |-- AbsensiTPA.exe
+  |   \-- _internal\           <- jangan diubah isinya
+  |-- Start-Absensi.bat        <- untuk MENYALAKAN aplikasi
+  \-- Matikan-Absensi.bat      <- untuk MEMATIKAN aplikasi
+
+Ketiganya harus SEJAJAR dalam 1 folder. Jangan pisahkan .bat dari folder
+AbsensiTPA. Jangan rename folder AbsensiTPA.
+
+CATATAN UNTUK PEMBUAT (PC source code):
+  1. Setelah setiap ubahan source (app\...), jalankan Build-Absensi.bat
+     sampai muncul "Selesai".
+  2. Baru copy ulang dist\AbsensiTPA ke paket. Jangan edit isi dist manual.
+  3. Database TIDAK ikut terkirim (dibuat otomatis di PC tujuan).
+
+2. SYARAT PC TUJUAN
+-------------------
+- Windows 10 / 11, 64-bit.
+- Microsoft Edge (untuk jendela scanner mode app). Jika tidak ada Edge,
+  buka manual di Chrome/Firefox: http://127.0.0.1:8000/scan
+- USB RFID reader tipe keyboard-emulator + kartu murid.
+- TIDAK perlu install Python, pip, virtualenv, atau internet.
+- Port 8000-8010 harus bebas (dipilih otomatis oleh Start-Absensi.bat).
+
+3. CARA INSTALL (di PC/laptop tujuan)
+-------------------------------------
+1. Copy folder paket (AbsensiTPA + 2 file .bat) ke PC tujuan, misal:
+     D:\AbsensiTPA\
+   Hasilnya harus seperti ini:
+     D:\AbsensiTPA\AbsensiTPA\AbsensiTPA.exe
+     D:\AbsensiTPA\Start-Absensi.bat
+     D:\AbsensiTPA\Matikan-Absensi.bat
+2. Colok USB RFID reader ke port USB. Tunggu bunyi "device ready".
+3. (Pertama kali saja) Jika Windows SmartScreen muncul
+   "Unknown publisher / Windows protected your PC":
+   klik More info -> Run anyway. Ini normal untuk exe PyInstaller
+   tanpa sertifikat.
+4. Double-klik Start-Absensi.bat. Tunggu sampai terbuka otomatis:
+   - Halaman admin : http://127.0.0.1:8000/admin
+   - Display TV LED: http://127.0.0.1:8000/scan (jendela Edge app)
+   Jika browser tidak terbuka otomatis, buka manual alamat di atas.
+5. Saat pertama jalan, aplikasi otomatis membuat:
+     data\tpa_absensi.db      (database utama)
+     data\backup\              (cadangan otomatis)
+     logs\app.log              (log error)
+   Lokasinya di sebelah AbsensiTPA.exe.
+
+4. CEK AWAL (wajib sebelum dipakai)
+-----------------------------------
+1. Di Dashboard (/admin), lihat kartu "Status Scanner USB".
+   - Harus tertulis misal "1 perangkat USB terhubung".
+   - Jika "Scanner USB tidak terdeteksi (Cek kabel)": cabut-colok reader,
+     coba port USB lain, pastikan tidak lewat hub USB yang longgar.
+2. Buka Data Murid -> Tambah 1 murid tes (nama + paket A/B).
+3. Klik "Daftarkan Kartu" pada murid itu, tempel kartu ke reader,
+   pastikan UID muncul dan tersimpan.
+4. Tempel kartu yang sama di halaman /scan atau tab admin:
+   - Tap ke-1 = Absen Masuk (nama muncul besar di TV + riwayat).
+   - Tap ke-2 di hari yang sama = Penjemputan (Pulang).
+   - Tap ke-3 dst = "Sudah Tercatat Hari Ini" (duplikat, tidak dobel data).
+5. Cek Absensi Hari Ini + Rekap: data harus muncul.
+6. Selesai tes: hapus murid tes bila perlu, lalu Matikan-Absensi.bat.
+
+5. PANDUAN PENGGUNAAN HARIAN (untuk pengurus)
+---------------------------------------------
+A. Menyalakan & mematikan
+   - Nyalakan : double-klik Start-Absensi.bat (biarkan jendela hitam
+     "Absensi TPA" tetap terbuka, boleh minimize).
+   - Matikan  : double-klik Matikan-Absensi.bat, ATAU dari halaman
+     Pengaturan -> Operasional Aplikasi -> Matikan Aplikasi.
+   - JANGAN matikan dengan close paksa (X) saat ada tap sedang diproses.
+     Tunggu 2-3 detik setelah tap terakhir.
+
+B. Tata letak layar yang disarankan
+   - Laptop admin : buka /admin (Dashboard, Data Murid, Absensi Hari Ini).
+   - TV LED       : buka /scan (tampilan besar untuk anak/orang tua).
+   - Tab /admin tempat reader aktif HARUS tetap terbuka agar tap tertangkap.
+     Jika ingin mengetik di form, MATIKAN dulu toggle Scanner di Dashboard
+     (geser ke Nonaktif), selesai mengetik nyalakan lagi.
+
+C. Alur absensi masuk (pagi)
+   1. Anak tempel kartu ke reader. TV menampilkan "ABSEN MASUK" + nama.
+   2. Aturan jam: Masuk mulai 06:30. Tap sebelum 06:30 dicatat
+      "Masuk sebelum jam operasional".
+   3. Kartu belum terdaftar -> "KARTU BELUM TERDAFTAR". Daftarkan dulu
+      di Data Murid -> Daftarkan Kartu.
+   4. Murid Nonaktif -> "MURID NONAKTIF". Aktifkan dulu di Data Murid.
+
+D. Alur penjemputan / pulang (siang-sore)
+   1. Orang tua datang, anak/operator tempel kartu yang SAMA.
+   2. TV menampilkan "PENJEMPUTAN (PULANG)" + jam pulang.
+   3. Batas waktu (otomatis dihitung aplikasi):
+      - Paket A (Half Day): maks 13:00, toleransi sampai 13:15.
+      - Paket B (Full Day): maks 16:00, toleransi sampai 16:15.
+   4. Terlambat lewat toleransi = "DENDA KETERLAMBATAN PENJEMPUTAN" +
+      jumlah menit tampil di TV, Dashboard, Absensi Hari Ini, dan Rekap.
+   5. Contoh: Paket A pulang 13:40 -> denda 25 menit (13:40 - 13:15).
+
+E. Menu-menu admin
+   - Dashboard: status scanner + toggle Aktif/Nonaktif + angka
+     Hadir Masuk / Sudah Dijemput / Denda / Total Murid Aktif + tap terakhir.
+   - Absensi Hari Ini: daftar belum hadir, tabel absensi hari ini,
+     form "Catat absensi manual" (untuk lupa bawa kartu). Baris manual
+     bisa "Ubah" / "Hapus manual".
+   - Data Murid: tambah murid, cari, edit paket/status, daftarkan kartu,
+     nonaktifkan (lulus/keluar) tanpa hapus data, hapus permanen bila perlu.
+   - Rekap & Laporan: filter tanggal + murid + status, ringkasan per murid
+     (Hadir/Izin/Sakit/Alpha), rincian harian, tombol "Unduh Excel (.xlsx)".
+   - Impor Excel: unduh template -> isi Nomor + Nama -> unggah -> validasi
+     pratinjau -> Konfirmasi simpan. Data lama tidak ditimpa.
+   - Pengaturan (urut dari atas):
+     1) Kustomisasi Kolom Murid: tambah kolom khusus (Nama Ortu, Kontak,
+        Alergi) yang ikut tampil di form + Excel.
+     2) Pencadangan Database: status cadangan terakhir + tombol
+        "Cadangkan Sekarang". Otomatis tiap 24 jam + tiap aplikasi mulai.
+        File di data\backup (30 terbaru disimpan).
+     3) Operasional Aplikasi: Matikan Aplikasi + Hapus Seluruh Data
+        (Reset Pabrik, harus ketik HAPUS, cadangan darurat otomatis dibuat).
+
+F. Toggle Scanner (Dashboard, kanan atas kartu Status)
+   - Aktif (hijau mint): tap kartu diproses. Klik di form/input akan
+     ditahan (muncul peringatan) supaya ketikan tidak kecampur UID.
+   - Nonaktif (peach): tap diabaikan, form bisa diketik bebas.
+   - Keadaan tersimpan di browser, jadi setelah refresh tetap ingat.
+
+6. PINDAH DATA DARI PC LAMA KE PC BARU
+--------------------------------------
+  Cara A (lengkap, termasuk riwayat): copy file data\tpa_absensi.db
+  dari PC lama ke folder yang sama di PC baru (saat aplikasi MATI),
+  lalu nyalakan. Folder data\backup boleh ikut dicopy.
+  Cara B (data murid saja): di PC lama Rekap -> Unduh Excel, di PC baru
+  Impor Excel -> unggah template yang sudah diisi. Riwayat tidak ikut.
+
+7. BACKUP & RESTORE DARURAT
+---------------------------
+- Backup otomatis ada di data\backup\tpa_absensi_YYYY-MM-DD_HH-MM-SS.db
+- Backup manual: Pengaturan -> Pencadangan Database -> Cadangkan Sekarang.
+- Simpan copy data\tpa_absensi.db + folder backup ke flashdisk tiap
+  minggu (copy-paste saat aplikasi mati).
+- Restore: tutup aplikasi, rename db rusak jadi .rusak, copy file backup
+  pilihan ke data\tpa_absensi.db, nyalakan lagi.
+
+8. TROUBLESHOOTING (masalah umum)
+----------------------------------
+[Start tidak membuka browser / "Server tidak merespons"]
+  - Lihat logs\app.log baris terakhir untuk pesan error.
+  - Pastikan tidak ada 2x Start (cek Task Manager: AbsensiTPA.exe ganda?
+    Matikan semua via Matikan-Absensi.bat, tunggu 5 detik, Start lagi).
+  - Start akan coba port 8000-8010. Buka alamat yang tertulis di jendela
+    Start ("berjalan di http://127.0.0.1:PORT").
+
+["Scanner USB tidak terdeteksi"]
+  - Cabut-colok reader, ganti port USB, hindari hub USB yang longgar.
+  - Tes di Notepad: tap kartu harus muncul angka + Enter. Jika di Notepad
+    saja tidak muncul, masalahnya hardware/driver, bukan aplikasi.
+  - Toggle Scanner di Dashboard harus Aktif.
+
+[Tap kartu tidak bereaksi di /scan]
+  - Pastikan jendela /scan terbuka dan tidak pindah fokus ke jendela lain.
+  - Pastikan toggle Scanner Aktif (bukan Nonaktif).
+  - Tes di tab /admin: harus muncul pemberitahuan hasil tap.
+    Jika di admin bisa tapi TV diam: reload /scan (Ctrl+F5), karena TV
+    menerima data dari tab admin.
+
+[Tampilan lama tidak berubah setelah update]
+  - Urutan benar: Matikan-Absensi.bat -> (di PC pembuat) Build-Absensi.bat
+    -> copy ulang dist -> Start-Absensi.bat -> di browser Ctrl+F5.
+  - Jangan edit file di dalam AbsensiTPA\_internal manual.
+
+[SmartScreen / antivirus menghapus exe]
+  - Klik More info -> Run anyway (pertama kali). Masukkan folder aplikasi
+    ke exclusion antivirus bila dihapus otomatis.
+
+[Database terkunci / "database is locked"]
+  - Matikan aplikasi, tunggu 5 detik, nyalakan lagi. Jangan buka file .db
+    dengan SQLite editor saat aplikasi jalan.
+
+9. YANG TIDAK PERLU DILAKUKAN
+------------------------------
+- Tidak perlu install Python / pip / .venv di PC tujuan.
+- Tidak perlu setting firewall, IP, Wi-Fi, hotspot, atau kabel LAN.
+- Tidak perlu buka port ke internet. Aplikasi 100% lokal.
+- Tidak perlu edit file di _internal\ manual.
+
+10. KONTAK & VERSI
+------------------
+- Nama app : Absensi TPA Ulul Albab (USB-only)
+- Mode     : PyInstaller onedir (folder), FastAPI @ 127.0.0.1
+- Build    : jalankan Build-Absensi.bat dari source untuk versi terbaru
+- Jika lapor error, sertakan: foto layar + file logs\app.log +
+  langkah terakhir sebelum error + tipe reader USB yang dipakai.
+

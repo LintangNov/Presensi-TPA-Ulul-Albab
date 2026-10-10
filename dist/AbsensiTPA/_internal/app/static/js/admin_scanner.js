@@ -36,8 +36,11 @@
     const toggle = document.querySelector("#scanner-toggle");
     const statusTexts = document.querySelectorAll(".scanner-operational-status");
     const indicator = document.querySelector("#scanner-operational-indicator");
+    const toggleBox = document.querySelector("#scanner-toggle-container");
 
     if (toggle) toggle.checked = active;
+
+    if (toggleBox) toggleBox.classList.toggle("is-off", !active);
 
     statusTexts.forEach((el) => {
       el.textContent = active ? "Aktif" : "Nonaktif";
@@ -133,7 +136,7 @@
     if (isInput) {
       e.preventDefault();
       e.target.blur();
-      showAdminToast("Mode Scanner aktif. Matikan toggle scanner di atas jika ingin mengisi data formulir.", "warning");
+      showAdminToast("Mode Scanner aktif. Matikan toggle scanner jika ingin mengisi data formulir.", "warning");
     }
   });
 

@@ -39,6 +39,7 @@
 <p class="notice">Belum ada data murid yang sesuai. Tambahkan murid baru di atas untuk mulai mendaftarkan kartu RFID.</p>
 {% endif %}
 
+{% if students %}
 <table>
   <thead>
     <tr>
@@ -130,6 +131,9 @@
     {% endfor %}
   </tbody>
 </table>
+{% else %}
+<p class="empty-table-notice">Data murid belum ada. Tambahkan murid baru di atas untuk mulai mendaftarkan kartu RFID.</p>
+{% endif %}
 
 <!-- Dialog Daftarkan Kartu (Tata Letak Bersih & Rapi) -->
 <dialog id="register-dialog">

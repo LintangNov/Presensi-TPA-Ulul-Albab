@@ -18,6 +18,7 @@
     href="/admin/rekap/export.xlsx?mulai={{ mulai }}&sampai={{ sampai }}{% if selected_student %}&santri_id={{ selected_student }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">Unduh
     Excel (.xlsx)</a></p>
 <h3>Ringkasan per murid</h3>
+{% if summary %}
 <table>
   <thead>
     <tr>
@@ -38,7 +39,11 @@
       <td>{{ row.Alpha }}</td>
     </tr>{% endfor %}</tbody>
 </table>
+{% else %}
+<p class="empty-table-notice">Data ringkasan rekap belum ada untuk rentang tanggal yang dipilih.</p>
+{% endif %}
 <h3>Rincian Kehadiran</h3>
+{% if rows %}
 <table>
   <thead>
     <tr>
@@ -81,4 +86,7 @@
       <td>{{ row.catatan or "" }}</td>
     </tr>{% endfor %}</tbody>
 </table>
+{% else %}
+<p class="empty-table-notice">Data rincian kehadiran belum ada untuk rentang tanggal yang dipilih.</p>
+{% endif %}
 {% endblock %}

@@ -12,6 +12,7 @@
   <h3>Belum hadir</h3>
   <ul>{% for row in absent %}<li>{{ row.nomor_urut or "-" }} - {{ row.nama }} ({{ "Paket A" if row.paket == 'A' else "Paket B" }})</li>{% else %}<li>Semua murid aktif sudah memiliki catatan absensi hari ini.</li>{% endfor %}</ul>
   <h3>Daftar absensi</h3>
+  {% if rows %}
   <table>
     <thead>
       <tr>
@@ -67,6 +68,9 @@
         </td>
       </tr>{% endfor %}</tbody>
   </table>
+  {% else %}
+  <p class="empty-table-notice">Data absensi hari ini belum ada. Catat absensi manual di bawah atau tap kartu murid pada reader USB.</p>
+  {% endif %}
   <h3>Catat absensi manual</h3>
   <form method="post" action="/admin/absensi-manual" class="manual-form">
     <label>Murid <select name="student_id" required>{% for row in rows %}{% if row.aktif %}<option value="{{ row.id }}">

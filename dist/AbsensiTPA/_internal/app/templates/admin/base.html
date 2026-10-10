@@ -21,14 +21,13 @@
         <span style="font-weight: 600;" id="sidebar-scanner-status" class="scanner-operational-status">Memuat…</span>
       </div>
       <nav class="sidebar-nav">
-        <a href="/admin">Dashboard</a>
-        <a href="/scan" target="_blank" rel="noopener">Buka Display Scanner</a>
-        <a href="/admin/hari-ini">Absensi Hari Ini</a>
-        <a href="/admin/santri">Data Murid</a>
-        <a href="/admin/rekap">Rekap & Laporan</a>
-        <a href="/admin/import">Impor Excel</a>
-        <a href="/admin/fields">Pengaturan</a>
-        <a href="/admin/gaya">Pratinjau Gaya</a>
+        <a href="/admin" {% if request.url.path == "/admin" %}aria-current="page"{% endif %}>Dashboard</a>
+        <a href="/scan" target="_blank" rel="noopener" style="color: white;">Buka Display Scanner</a>
+        <a href="/admin/hari-ini" {% if request.url.path == "/admin/hari-ini" %}aria-current="page"{% endif %}>Absensi Hari Ini</a>
+        <a href="/admin/santri" {% if request.url.path == "/admin/santri" %}aria-current="page"{% endif %}>Data Murid</a>
+        <a href="/admin/rekap" {% if request.url.path.startswith("/admin/rekap") %}aria-current="page"{% endif %}>Rekap & Laporan</a>
+        <a href="/admin/import" {% if request.url.path.startswith("/admin/import") %}aria-current="page"{% endif %}>Impor Excel</a>
+        <a href="/admin/fields" {% if request.url.path.startswith("/admin/fields") %}aria-current="page"{% endif %}>Pengaturan</a>
       </nav>
     </aside>
 
