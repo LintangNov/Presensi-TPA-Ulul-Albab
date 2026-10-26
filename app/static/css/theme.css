@@ -28,15 +28,15 @@
 }
 
 html {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg, #eefcfa);
+  color: var(--text, #2b2a26);
   font-family: var(--font-body);
 }
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg, #eefcfa);
+  color: var(--text, #2b2a26);
   font-size: 1rem;
   line-height: 1.55;
 }
@@ -301,11 +301,11 @@ th {
 }
 
 tbody tr:nth-child(even) {
-  background: var(--primary-soft);
+  background: var(--primary-soft, #cdfff9);
 }
 
 tbody tr:hover {
-  background: var(--frozen-water);
+  background: var(--frozen-water, #cdfff9);
 }
 
 /* Status Badges */
@@ -937,4 +937,4 @@ input:checked + .switch-slider:before {
   height: 32px;
   color: var(--text-muted);
   font-weight: 700;
-}
+}
