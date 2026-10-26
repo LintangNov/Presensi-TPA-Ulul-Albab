@@ -13,6 +13,7 @@ from app.services.students import StudentService
 from app.services.excel_io import export_workbook, preview_students, student_template
 from app.services.reports import ReportService
 from app.runtime import DB_PATH, backup_database, check_usb_scanner_connected, last_backup, schedule_shutdown
+from app.services import scanner_simulator
 
 students = StudentService(DB_PATH)
 reports = ReportService(DB_PATH)
@@ -412,6 +413,75 @@ async def stop_application(request: Request):
 async def scanner_hardware(request: Request):
     local_only(request)
     return check_usb_scanner_connected()
+
+
+@router.get("/admin/simulator", response_class=HTMLResponse)
+async def simulator_page(request: Request, page: int = 1):
+    local_only(request)
+    if not scanner_simulator.is_simulation_enabled():
+        raise HTTPException(404, "Halaman tidak ditemukan.")
+    per_page = 15
+    page = max(1, page)
+    students_page, total_students = scanner_simulator.get_students_page(page, per_page)
+    total_pages = max(1, (total_students + per_page - 1) // per_page)
+    if page > total_pages:
+        page = total_pages
+        students_page, total_students = scanner_simulator.get_students_page(page, per_page)
+    return request.app.state.templates.TemplateResponse(
+        request=request,
+        name="admin/simulator.html",
+        context=context(
+            request,
+            title="Simulator RFID",
+            simulator_enabled=scanner_simulator.is_simulation_enabled(),
+            students=students_page,
+            page=page,
+            total_pages=total_pages,
+            total_students=total_students,
+            per_page=per_page,
+        ),
+    )
+
+
+@router.get("/api/admin/scanner-simulator/status")
+async def scanner_simulator_status(request: Request):
+    local_only(request)
+    return scanner_simulator.get_simulation_status()
+
+
+class SimulateTapRequest(BaseModel):
+    uid: str
+
+
+@router.post("/api/admin/scanner-simulator/tap")
+async def scanner_simulator_tap(request: Request):
+    local_only(request)
+    if not scanner_simulator.is_simulation_enabled():
+        raise HTTPException(400, "Simulasi tidak tersedia. Jalankan dari source code tanpa card reader fisik.")
+    payload = SimulateTapRequest.model_validate(await request.json())
+    try:
+        return scanner_simulator.simulate_tap(payload.uid)
+    except Exception as exc:
+        raise HTTPException(500, f"Gagal simulasi tap: {exc}") from exc
+
+
+class SimulatorRegisterCardRequest(BaseModel):
+    student_id: int
+    uid: str
+
+
+@router.post("/api/admin/scanner-simulator/register-card")
+async def scanner_simulator_register_card(request: Request):
+    local_only(request)
+    if not scanner_simulator.is_simulation_enabled():
+        raise HTTPException(400, "Simulasi tidak tersedia. Jalankan dari source code tanpa card reader fisik.")
+    payload = SimulatorRegisterCardRequest.model_validate(await request.json())
+    try:
+        return scanner_simulator.register_simulator_card(payload.student_id, payload.uid)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
 
 
 @router.get("/api/admin/status")

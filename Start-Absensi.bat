@@ -24,16 +24,24 @@ if not defined PORT (
   exit /b 1
 )
 set "ABSENSI_PORT=!PORT!"
+set "APP_EXE="
 
-if exist "AbsensiTPA.exe" (
-  start "Absensi TPA" /min "%~dp0AbsensiTPA.exe"
-) else if exist "dist\AbsensiTPA\AbsensiTPA.exe" (
-  start "Absensi TPA" /min "%~dp0dist\AbsensiTPA\AbsensiTPA.exe"
+if exist "%~dp0AbsensiTPA.exe" (
+  set "APP_EXE=%~dp0AbsensiTPA.exe"
+) else if exist "%~dp0AbsensiTPA\AbsensiTPA.exe" (
+  set "APP_EXE=%~dp0AbsensiTPA\AbsensiTPA.exe"
+) else if exist "%~dp0dist\AbsensiTPA\AbsensiTPA.exe" (
+  set "APP_EXE=%~dp0dist\AbsensiTPA\AbsensiTPA.exe"
+)
+
+if defined APP_EXE (
+  start "Absensi TPA" /min "!APP_EXE!"
 ) else if exist ".venv\Scripts\python.exe" (
   start "Absensi TPA" /min ".venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port !PORT!
 ) else (
   echo Aplikasi belum dikemas dan virtual environment tidak ditemukan.
-  echo Salin folder dist\AbsensiTPA dari komputer pembuat aplikasi.
+  echo Pastikan folder AbsensiTPA berisi AbsensiTPA.exe berada sejajar
+  echo dengan file Start-Absensi.bat ini.
   pause
   exit /b 1
 )

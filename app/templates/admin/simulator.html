@@ -1,0 +1,304 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h2 style="margin: 0;">Simulator RFID</h2>
+    <p style="margin: 0; color: #718096; font-size: 0.95rem;">Uji coba absensi tanpa card reader fisik. Hanya tersedia saat menjalankan dari source code dan tidak ada scanner USB terdeteksi.</p>
+  </div>
+</div>
+
+{% if not simulator_enabled %}
+<div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 10px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; color: #9b2c2c;">
+  <p style="margin: 0 0 0.5rem 0; font-weight: 700;">⚠️ Simulasi Tidak Tersedia</p>
+  <p style="margin: 0; font-size: 0.9rem;">Simulasi RFID hanya aktif saat semua kondisi berikut terpenuhi:</p>
+  <ul style="margin: 0.5rem 0 0 0; padding-left: 1.2rem; font-size: 0.9rem;">
+    <li>Aplikasi berjalan dari <strong>source code</strong> (bukan file <code>.exe</code> build).</li>
+    <li>Tidak ada <strong>card reader RFID fisik</strong> yang terdeteksi di port USB manapun.</li>
+  </ul>
+</div>
+{% else %}
+
+<!-- Status Simulasi -->
+<div class="settings-card" style="margin-bottom: 1.5rem;">
+  <div class="settings-card-title">
+    <span>Status Simulasi</span>
+  </div>
+  <div class="settings-card-subtitle">
+    Simulasi RFID aktif. Anda dapat mendaftarkan kartu baru dan mensimulasikan tap absensi.
+  </div>
+  <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+    <span class="badge success" style="font-size: 0.9rem;">✓ Simulasi Aktif</span>
+    <span class="badge info" style="font-size: 0.9rem;">Mode: Source Code (Non-Frozen)</span>
+    <span class="badge warning" style="font-size: 0.9rem;">Hardware: Tidak Terdeteksi</span>
+  </div>
+</div>
+
+<!-- Form Pendaftaran Kartu Simulasi -->
+<div class="settings-card" style="margin-bottom: 1.5rem;">
+  <div class="settings-card-title">
+    <span>Daftarkan Kartu Simulasi</span>
+  </div>
+  <div class="settings-card-subtitle">
+    Pasangkan UID simulasi ke murid. Setelah kartu terpasang, gunakan tombol "Simulasikan Tap" untuk menguji absensi.
+  </div>
+  <form id="register-simulator-card-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: end;">
+    <label>Murid
+      <select name="student_id" id="sim-student-select" required>
+        <option value="">-- Pilih Murid --</option>
+        {% for student in students %}
+        <option value="{{ student.id }}" data-nama="{{ student.nama }}" data-uid="{{ student.rfid_uid or '' }}">
+          {{ student.nama }}{% if student.nomor_urut %} (No. {{ student.nomor_urut }}){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>UID Kartu
+      <input name="uid" id="sim-uid-input" placeholder="Contoh: CARD-01" autocomplete="off" required>
+    </label>
+    <div>
+      <button type="submit" class="btn-sm" style="min-width: 140px;">Pasangkan Kartu</button>
+    </div>
+    <div style="grid-column: 1 / -1;">
+      <p id="simulator-register-message" style="margin: 0; font-size: 0.9rem; font-weight: 600;"></p>
+    </div>
+  </form>
+</div>
+
+<!-- Tabel Murid (dengan pagination) -->
+<div class="settings-card" style="margin-bottom: 1.5rem;">
+  <div class="settings-card-title">
+    <span>Daftar Murid</span>
+  </div>
+  <div class="settings-card-subtitle">
+    Pilih murid lalu tempelkan UID simulasi untuk menguji alur absensi.
+    {% if total_students %}Total {{ total_students }} murid.{% else %}Belum ada data murid.{% endif %}
+  </div>
+
+  <div style="margin-top: 1rem;">
+    {% if students %}
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 60px;">No</th>
+          <th>Nama Murid</th>
+          <th>Paket</th>
+          <th>RFID UID</th>
+          <th>Status</th>
+          <th style="min-width: 220px;">Tindakan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students %}
+        <tr>
+          <td>{{ student.nomor_urut or "-" }}</td>
+          <td>{{ student.nama }}</td>
+          <td>{{ "Paket A (Half Day)" if student.paket == "A" else "Paket B (Full Day)" }}</td>
+          <td>
+            {% if student.rfid_uid %}
+            <code style="font-weight: 600; color: #2b6cb0;">{{ student.rfid_uid }}</code>
+            {% else %}
+            <span style="color: #a0aec0; font-size: 0.85rem; font-style: italic;">Belum dipasangkan</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge {{ 'success' if student.aktif else 'inactive' }}" style="font-size: 0.8rem;">
+              {{ "Aktif" if student.aktif else "Nonaktif" }}
+            </span>
+          </td>
+          <td>
+            <div class="btn-group">
+              <button
+                type="button"
+                class="btn-sm"
+                data-sim-tap-uid="{{ student.rfid_uid or '' }}"
+                data-sim-tap-nama="{{ student.nama }}"
+                data-sim-tap-label="Simulasikan Tap"
+                title="Simulasikan tap kartu untuk murid ini"
+                {% if not student.rfid_uid %}disabled{% endif %}
+              >
+                Simulasikan Tap
+              </button>
+              <button
+                type="button"
+                class="btn-sm btn-secondary"
+                data-sim-select-student="{{ student.id }}"
+                data-sim-select-name="{{ student.nama }}"
+                data-sim-select-uid="{{ student.rfid_uid or '' }}"
+                title="Pilih murid ini pada form pendaftaran kartu"
+              >
+                Pilih
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-table-notice">Belum ada data murid. Tambahkan murid di menu "Data Murid" terlebih dahulu.</p>
+    {% endif %}
+  </div>
+
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+  <nav class="pagination" aria-label="Navigasi halaman murid">
+    <span class="pagination-info">
+      Menampilkan {{ ((page - 1) * per_page) + 1 }}–{{ [page * per_page, total_students] | min }} dari {{ total_students }} murid
+    </span>
+    <div class="pagination-links">
+      {% if page > 1 %}
+      <a class="pagination-btn" href="/admin/simulator?page={{ page - 1 }}" title="Halaman sebelumnya">&laquo; Sebelumnya</a>
+      {% else %}
+      <span class="pagination-btn disabled">&laquo; Sebelumnya</span>
+      {% endif %}
+
+      {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+        <span class="pagination-btn active" aria-current="page">{{ p }}</span>
+        {% elif p == 1 or p == total_pages or (p >= (page - 1) and p <= (page + 1)) %}
+        <a class="pagination-btn" href="/admin/simulator?page={{ p }}">{{ p }}</a>
+        {% elif p == (page - 2) or p == (page + 2) %}
+        <span class="pagination-ellipsis">&hellip;</span>
+        {% endif %}
+      {% endfor %}
+
+      {% if page < total_pages %}
+      <a class="pagination-btn" href="/admin/simulator?page={{ page + 1 }}" title="Halaman berikutnya">Berikutnya &raquo;</a>
+      {% else %}
+      <span class="pagination-btn disabled">Berikutnya &raquo;</span>
+      {% endif %}
+    </div>
+  </nav>
+  {% endif %}
+</div>
+<script>
+  const simulatorEnabled = {{ 'true' if simulator_enabled else 'false' }};
+
+  // Pertahankan halaman aktif saat reload agar pagination tidak ter-reset.
+  function reloadKeepingPage() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("page", "{{ page }}");
+    window.location.href = url.toString();
+  }
+
+  // Fallback bila admin_scanner.js belum selesai dimuat.
+  function notify(message, type = "info") {
+    if (typeof showAdminToast === "function") {
+      showAdminToast(message, type);
+      return;
+    }
+    let toast = document.querySelector("#admin-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "admin-toast";
+      toast.className = "admin-toast";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.className = `admin-toast show ${type}`;
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { toast.className = "admin-toast"; }, 3200);
+  }
+
+  async function simulateTap(uid) {
+    if (!simulatorEnabled) {
+      notify("Simulasi tidak tersedia.", "warning");
+      return;
+    }
+    if (!uid) {
+      notify("Murid ini belum memiliki kartu RFID. Pasangkan kartu terlebih dahulu.", "warning");
+      return;
+    }
+    try {
+      // Jalur yang sama persis dengan card reader fisik: POST ke /api/tap
+      const response = await fetch("/api/tap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid }),
+      });
+      const result = await response.json();
+
+      // Kirim hasil tap ke halaman scanner (BroadcastChannel), sama seperti card reader fisik
+      const channel = new BroadcastChannel("absensi_tpa_channel");
+      channel.postMessage({
+        type: "tap_result",
+        uid: uid,
+        data: result,
+      });
+      channel.close();
+
+      // Tampilkan toast notifikasi di admin (pola sama seperti sendTap)
+      const badgeType = result.hasil === "berhasil" || result.hasil === "pulang" ? "success" :
+                        result.hasil === "denda" ? "danger" :
+                        result.hasil === "duplikat" ? "warning" : "error";
+      const infoNama = result.nama ? `[${result.nama}] ` : "";
+      notify(`[Simulasi] ${infoNama}${result.pesan}`, badgeType);
+
+      // Muat ulang halaman (pertahankan halaman aktif) agar status absensi terbaru tampil
+      setTimeout(reloadKeepingPage, 1200);
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  }
+
+  // Tombol "Simulasikan Tap" pada tabel murid
+  document.querySelectorAll("[data-sim-tap-uid]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const uid = button.dataset.simTapUid;
+      const nama = button.dataset.simTapNama;
+      if (!uid) {
+        notify(`Kartu untuk ${nama} belum terdaftar.`, "warning");
+        return;
+      }
+      simulateTap(uid);
+    });
+  });
+
+  // Tombol "Pilih" untuk mengisi form pendaftaran kartu
+  const studentSelect = document.getElementById("sim-student-select");
+  const uidInput = document.getElementById("sim-uid-input");
+  document.querySelectorAll("[data-sim-select-student]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (studentSelect) studentSelect.value = button.dataset.simSelectStudent;
+      if (uidInput && button.dataset.simSelectUid) uidInput.value = button.dataset.simSelectUid;
+      notify(`Murid ${button.dataset.simSelectName} dipilih.`, "info");
+      if (uidInput) uidInput.focus();
+    });
+  });
+
+  // Isi otomatis UID saat murid dipilih dari dropdown
+  if (studentSelect) {
+    studentSelect.addEventListener("change", () => {
+      const option = studentSelect.selectedOptions[0];
+      if (uidInput && option && option.dataset.uid) uidInput.value = option.dataset.uid;
+    });
+  }
+
+  document.getElementById("register-simulator-card-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const studentId = formData.get("student_id");
+    const uid = formData.get("uid");
+    if (!studentId || !uid) return;
+
+    const messageEl = document.getElementById("simulator-register-message");
+    try {
+      const res = await fetch("/api/admin/scanner-simulator/register-card", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ student_id: parseInt(studentId), uid }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.detail || "Gagal mendaftarkan kartu.");
+      messageEl.textContent = "[OK] Kartu " + result.uid + " berhasil dipasangkan ke " + result.nama + "!";
+      messageEl.style.color = "#276749";
+      e.target.reset();
+      setTimeout(reloadKeepingPage, 1000);
+    } catch (err) {
+      messageEl.textContent = err.message;
+      messageEl.style.color = "#c53030";
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from app.services.attendance import AttendanceService
+from app.services import scanner_simulator
 from app.routers.admin import router as admin_router
 from app.runtime import (
     DB_PATH,
@@ -47,6 +48,8 @@ templates = Jinja2Templates(directory=str(RESOURCE_DIR / "app" / "templates"))
 app.mount("/static", StaticFiles(directory=str(RESOURCE_DIR / "app" / "static")), name="static")
 attendance = AttendanceService(DB_PATH)
 app.state.templates = templates
+app.state.simulator_enabled = scanner_simulator.is_simulation_enabled()
+scanner_simulator.log_simulation_status()
 app.include_router(admin_router)
 app.state.backup_task = None
 

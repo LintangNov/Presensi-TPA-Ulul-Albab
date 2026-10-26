@@ -62,12 +62,8 @@
   <tbody>{% for row in rows %}<tr>
       <td>{{ row.tanggal }}</td>
       <td>{{ row.nomor_urut or "-" }}</td>
-      <td><strong>{{ row.nama }}</strong></td>
-      <td>
-        <span class="badge" style="background: {% if row.paket == 'B' %}#c6f6d5{% else %}#e2e8f0{% endif %}; font-size: 0.8rem;">
-          {{ "Paket A" if row.paket == "A" else "Paket B" }}
-        </span>
-      </td>
+      <td>{{ row.nama }}</td>
+      <td>{{ "Paket A" if row.paket == "A" else "Paket B" }}</td>
       <td>{{ row.waktu or "-" }}</td>
       <td>{{ row.waktu_pulang or "-" }}</td>
       <td>

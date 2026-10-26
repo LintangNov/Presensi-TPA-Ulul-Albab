@@ -1,0 +1,5 @@
+# File Aider
+.aider*
+
+# Upload dari Telegram
+.bot_uploads/

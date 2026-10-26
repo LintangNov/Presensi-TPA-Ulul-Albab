@@ -60,6 +60,31 @@ class StudentService:
             ).fetchall()
             return [self._student(row) for row in rows]
 
+    def list_students_paginated(
+        self, search: str = "", page: int = 1, per_page: int = 15
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Ambil satu halaman data murid beserta jumlah total baris.
+
+        Query dijalankan di level SQL (LIMIT/OFFSET) agar tidak memuat
+        seluruh tabel ke memori. Mengembalikan tuple (baris, total).
+        """
+        page = max(1, page)
+        per_page = max(1, per_page)
+        offset = (page - 1) * per_page
+        pattern = f"%{search}%"
+        with connect(self.db_path) as connection:
+            total = connection.execute(
+                "SELECT COUNT(*) FROM santri WHERE nama LIKE ? OR CAST(nomor_urut AS TEXT) LIKE ?",
+                (pattern, pattern),
+            ).fetchone()[0]
+            rows = connection.execute(
+                "SELECT * FROM santri WHERE nama LIKE ? OR CAST(nomor_urut AS TEXT) LIKE ? "
+                "ORDER BY aktif DESC, nomor_urut, nama "
+                "LIMIT ? OFFSET ?",
+                (pattern, pattern, per_page, offset),
+            ).fetchall()
+            return [self._student(row) for row in rows], int(total)
+
     def get_student(self, student_id: int) -> dict[str, Any] | None:
         with connect(self.db_path) as connection:
             row = connection.execute(
