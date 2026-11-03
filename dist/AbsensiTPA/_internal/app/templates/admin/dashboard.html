@@ -7,7 +7,7 @@
   </div>
   <div>
     <a href="/scan" target="_blank" rel="noopener">
-      <button type="button" class="btn-sm" style="background: #2b6cb0; color: #fff; border-color: #2b6cb0;">
+      <button type="button" class="btn-sm" style="background: #007bff; color: #fff; border-color: #2b6cb0;">
         Buka Display Scanner
       </button>
     </a>
@@ -30,7 +30,7 @@
         </p>
       </div>
     </div>
-    <div class="scanner-ctrl-right scanner-toggle-box" id="scanner-toggle-container">
+    <div class="scanner-ctrl-right scanner-toggle-box" id="scanner-toggle-container" style="cursor: pointer;">
       <div style="text-align: right;">
         <span style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #718096; font-weight: 700;">Scanner</span>
         <span id="dashboard-scanner-status" class="scanner-operational-status" style="font-size: 0.95rem; font-weight: 700; color: #2d3748;">Memuat…</span>
@@ -59,7 +59,7 @@
     <span>Sudah Dijemput</span>
   </article>
   <article>
-    <strong style="color: {% if denda_count > 0 %}#c53030{% else %}#4a5568{% endif %};">{{ denda_count }}</strong>
+    <strong class="{% if denda_count > 0 %}text-danger{% else %}text-muted-2{% endif %}">{{ denda_count }}</strong>
     <span>Denda Penjemputan</span>
   </article>
   <article>

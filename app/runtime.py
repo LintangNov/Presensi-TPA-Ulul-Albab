@@ -140,7 +140,7 @@ def check_usb_scanner_connected() -> dict[str, Any]:
         return {
             "connected": len(found) > 0,
             "count": len(found),
-            "details": f"{len(found)} perangkat USB terhubung" if found else "Scanner USB tidak terdeteksi (Cek kabel)",
+            "details": f"{len(found)} perangkat USB terhubung" if found else "Scanner USB tidak terdeteksi",
         }
     except Exception as exc:
         logging.getLogger("absensi_tpa").debug("Gagal mendeteksi perangkat USB: %s", exc)

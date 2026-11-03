@@ -1,87 +1,390 @@
 {% extends "admin/base.html" %}
 {% block content %}
-<section hx-get="/admin/hari-ini" hx-trigger="every 3s" hx-select=".today-content" hx-target=".today-content"
-  hx-swap="outerHTML" class="today-content">
-  <h2>Absensi Hari Ini</h2>
-  <div class="summary-grid">
-    <article><strong>{{ present_count }} dari {{ active_count }}</strong><span>murid hadir masuk</span></article>
-    <article><strong style="color: #2b6cb0;">{{ picked_up_count }}</strong><span>sudah dijemput</span></article>
-    <article><strong style="color: {% if denda_count > 0 %}#c53030{% else %}#4a5568{% endif %};">{{ denda_count }}</strong><span>denda penjemputan</span></article>
-    <article><strong>{{ absent|length }}</strong><span>belum hadir</span></article>
-  </div>
-  <h3>Belum hadir</h3>
-  <ul>{% for row in absent %}<li>{{ row.nomor_urut or "-" }} - {{ row.nama }} ({{ "Paket A" if row.paket == 'A' else "Paket B" }})</li>{% else %}<li>Semua murid aktif sudah memiliki catatan absensi hari ini.</li>{% endfor %}</ul>
-  <h3>Daftar absensi</h3>
-  {% if rows %}
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 50px;">No</th>
-        <th>Nama Murid</th>
-        <th>Paket</th>
-        <th>Jam Masuk</th>
-        <th>Jam Pulang</th>
-        <th>Status Pulang</th>
-        <th>Status Hadir</th>
-        <th>Tindakan</th>
-      </tr>
-    </thead>
-    <tbody>{% for row in rows %}<tr>
-        <td>{{ row.nomor_urut or "-" }}</td>
-        <td>{{ row.nama }}</td>
-        <td>{{ "Paket A" if row.paket == "A" else "Paket B" }}</td>
-        <td>{{ row.waktu or "-" }}</td>
-        <td>{{ row.waktu_pulang or "-" }}</td>
-        <td>
-          {% if row.status_pulang %}
-            {% if "Denda" in row.status_pulang %}
-              <span class="badge error" style="font-size: 0.8rem;">⚠️ {{ row.status_pulang }} ({{ row.denda_menit }} mnt)</span>
-            {% else %}
-              <span class="badge success" style="font-size: 0.8rem;">✓ {{ row.status_pulang }}</span>
+<section class="today-page-container">
+  <div id="today-live-section" hx-get="/admin/hari-ini" hx-trigger="every 3s" hx-select="#today-live-section" hx-target="#today-live-section" hx-swap="outerHTML">
+    <h2>Absensi Hari Ini</h2>
+    <div class="summary-grid">
+      <article><strong>{{ present_count }} dari {{ active_count }}</strong><span>murid hadir masuk</span></article>
+      <article><strong style="color: #2b6cb0;">{{ picked_up_count }}</strong><span>sudah dijemput</span></article>
+      <article><strong class="{% if denda_count > 0 %}text-danger{% else %}text-muted-2{% endif %}">{{ denda_count }}</strong><span>denda penjemputan</span></article>
+      <article><strong>{{ absent|length }}</strong><span>belum hadir</span></article>
+    </div>
+
+    <h3>Belum hadir</h3>
+    <ul>
+      {% for row in absent %}
+        <li>{{ row.nomor_urut or "-" }} - {{ row.nama }} ({{ "Paket A" if row.paket == 'A' else "Paket B" }})</li>
+      {% else %}
+        <li>Semua murid aktif sudah memiliki catatan absensi hari ini.</li>
+      {% endfor %}
+    </ul>
+
+    <h3>Daftar absensi</h3>
+    {% if rows %}
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 50px;">No</th>
+          <th>Nama Murid</th>
+          <th>Paket</th>
+          <th>Jam Masuk</th>
+          <th>Jam Pulang</th>
+          <th>Nama Pengantar</th>
+          <th>Nama Penjemput</th>
+          <th>Status Pulang</th>
+          <th>Tindakan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.nomor_urut or "-" }}</td>
+          <td>{{ row.nama }}</td>
+          <td>{{ "Paket A" if row.paket == "A" else "Paket B" }}</td>
+          <td>{{ row.waktu or "-" }}</td>
+          <td>{{ row.waktu_pulang or "-" }}</td>
+          <td>{{ row.nama_pengantar or "-" }}</td>
+          <td>
+            {{ row.nama_penjemput or "-" }}
+            {% if row.alasan_tanpa_kartu %}
+              <div style="font-size: 0.78rem; color: #4a5568; margin-top: 0.2rem; background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;" title="Alasan penjemputan tanpa kartu">
+                Kartu: <em>{{ row.alasan_tanpa_kartu }}</em>
+              </div>
             {% endif %}
-          {% else %}
-            <span style="color: #a0aec0; font-size: 0.85rem;">Belum pulang</span>
-          {% endif %}
-        </td>
-        <td>
-          <span class="badge {{ 'success' if row.status == 'Hadir' else 'inactive' }}" style="font-size: 0.8rem;">
-            {{ row.status or "Belum hadir" }}
-          </span>
-        </td>
-        <td>{% if row.absensi_id and row.sumber == "manual" %}<details>
-            <summary class="btn-sm btn-secondary" style="cursor: pointer;">Ubah</summary>
-            <form method="post" action="/admin/absensi-manual"><input type="hidden" name="student_id"
-                value="{{ row.id }}"><label>Tanggal <input type="date" name="tanggal"
-                  value="{{ row.tanggal }}"></label><label>Jam Masuk <input type="time" name="waktu"
-                  value="{{ row.waktu or '' }}"></label><label>Jam Pulang <input type="time" name="waktu_pulang"
-                  value="{{ row.waktu_pulang or '' }}"></label><label>Status Pulang <input name="status_pulang"
-                  value="{{ row.status_pulang or '' }}" placeholder="Tepat Waktu / Denda"></label><label>Status Hadir <select name="status">{% for item in ["Hadir",
-                  "Izin", "Sakit", "Alpha"] %}<option {% if row.status==item %}selected{% endif %}>{{ item }}</option>{%
-                  endfor %}</select></label><label>Catatan <input name="catatan"
-                  value="{{ row.catatan or '' }}"></label><button type="submit" class="btn-sm">Simpan perubahan</button></form>
-          </details>
-          <form method="post" action="/admin/absensi-manual/{{ row.absensi_id }}/hapus" style="display: inline;"><button type="submit" class="btn-sm btn-danger">Hapus manual</button></form>{% endif %}
-        </td>
-      </tr>{% endfor %}</tbody>
-  </table>
-  {% else %}
-  <p class="empty-table-notice">Data absensi hari ini belum ada. Catat absensi manual di bawah atau tap kartu murid pada reader USB.</p>
-  {% endif %}
-  <h3>Catat absensi manual</h3>
-  <form method="post" action="/admin/absensi-manual" class="manual-form">
-    <label>Murid <select name="student_id" required>{% for row in rows %}{% if row.aktif %}<option value="{{ row.id }}">
-          {{ row.nama }} ({{ "Paket A" if row.paket == 'A' else "Paket B" }})</option>{% endif %}{% endfor %}</select></label>
-    <label>Tanggal <input type="date" name="tanggal" required></label>
-    <label>Jam Masuk <input type="time" name="waktu"></label>
-    <label>Jam Pulang <input type="time" name="waktu_pulang"></label>
-    <label>Status Hadir <select name="status">
-        <option>Hadir</option>
-        <option>Izin</option>
-        <option>Sakit</option>
-        <option>Alpha</option>
-      </select></label>
-    <label>Catatan <input name="catatan"></label>
-    <button type="submit" class="btn-sm">Simpan absensi manual</button>
-  </form>
+          </td>
+          <td>
+            {% if row.status_pulang %}
+              {% if "Denda" in row.status_pulang %}
+                <span class="badge error" style="font-size: 0.8rem;">⚠️ {{ row.status_pulang }} ({{ row.denda_menit }} mnt)</span>
+              {% else %}
+                <span class="badge success" style="font-size: 0.8rem;">✓ {{ row.status_pulang }}</span>
+              {% endif %}
+            {% else %}
+              <span style="color: #a0aec0; font-size: 0.85rem;">Belum pulang</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if row.absensi_id and row.sumber == "manual" %}
+            <details>
+              <summary class="btn-sm btn-secondary" style="cursor: pointer;">Ubah</summary>
+              <form method="post" action="/admin/absensi-manual">
+                <input type="hidden" name="student_id" value="{{ row.id }}">
+                <label>Tanggal (DD/MM/YYYY)
+                  <input type="text" name="tanggal" value="{{ row.tanggal }}" placeholder="DD/MM/YYYY" maxlength="10">
+                </label>
+                <label>Jam Masuk (Format 24 Jam: 00.00 - 23.59)
+                  <input type="text" name="waktu" class="input-jam-24" value="{{ row.waktu or '' }}" placeholder="07.00" maxlength="5">
+                </label>
+                <label>Jam Pulang (Format 24 Jam: 00.00 - 23.59)
+                  <input type="text" name="waktu_pulang" class="input-jam-24" value="{{ row.waktu_pulang or '' }}" placeholder="13.00" maxlength="5">
+                </label>
+                <label>Status Pulang <input name="status_pulang" value="{{ row.status_pulang or '' }}" placeholder="Tepat Waktu / Denda Keterlambatan"></label>
+                
+                <div class="form-group-combo dropdown-with-custom">
+                  <label>Nama Pengantar</label>
+                  <select name="nama_pengantar">
+                    <option value=""></option>
+                    <option value="Ayah" {% if row.nama_pengantar == "Ayah" %}selected{% endif %}>Ayah</option>
+                    <option value="Ibu" {% if row.nama_pengantar == "Ibu" %}selected{% endif %}>Ibu</option>
+                    <option value="Lainnya" {% if row.nama_pengantar not in ('Ayah', 'Ibu', '', None) or row.nama_pengantar == 'Lainnya' %}selected{% endif %}>Lainnya</option>
+                  </select>
+                  <input type="text" class="input-custom-text" name="nama_pengantar_lainnya"
+                    value="{{ row.nama_pengantar if row.nama_pengantar not in ('Ayah', 'Ibu', 'Lainnya', None) else '' }}"
+                    placeholder="Ketik nama pengantar...">
+                </div>
+
+                <div class="form-group-combo dropdown-with-custom">
+                  <label>Nama Penjemput</label>
+                  <select name="nama_penjemput">
+                    <option value=""></option>
+                    <option value="Ayah" {% if row.nama_penjemput == "Ayah" %}selected{% endif %}>Ayah</option>
+                    <option value="Ibu" {% if row.nama_penjemput == "Ibu" %}selected{% endif %}>Ibu</option>
+                    <option value="Lainnya" {% if row.nama_penjemput not in ('Ayah', 'Ibu', '', None) or row.nama_penjemput == 'Lainnya' %}selected{% endif %}>Lainnya</option>
+                  </select>
+                  <input type="text" class="input-custom-text" name="nama_penjemput_lainnya"
+                    value="{{ row.nama_penjemput if row.nama_penjemput not in ('Ayah', 'Ibu', 'Lainnya', None) else '' }}"
+                    placeholder="Ketik nama penjemput...">
+                </div>
+
+                <label>Alasan Tanpa Kartu (Opsional)
+                  <input type="text" name="alasan_tanpa_kartu" value="{{ row.alasan_tanpa_kartu or '' }}" placeholder="Alasan jika tanpa kartu">
+                </label>
+
+                <label>Catatan
+                  <input name="catatan" value="{{ row.catatan or '' }}">
+                </label>
+                <button type="submit" class="btn-sm">Simpan perubahan</button>
+              </form>
+            </details>
+            <form method="post" action="/admin/absensi-manual/{{ row.absensi_id }}/hapus" style="display: inline;">
+              <button type="submit" class="btn-sm btn-danger">Hapus manual</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-table-notice">Data absensi hari ini belum ada. Catat absensi manual di bawah atau tap kartu murid pada reader USB.</p>
+    {% endif %}
+  </div>
+
+  <div style="margin-top: 2.5rem;">
+    <h3 style="margin-bottom: 0.75rem;">Catat Presensi Manual</h3>
+    <form method="post" action="/admin/absensi-manual" class="manual-form" id="form-catat-manual">
+      <!-- Murid -->
+      <label>Murid
+        <select name="student_id" required>
+          {% for row in rows %}
+            {% if row.aktif %}
+              <option value="{{ row.id }}">{{ row.nama }} ({{ "Paket A" if row.paket == 'A' else "Paket B" }})</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </label>
+
+      <!-- Tanggal Presensi: 1 Kolom Ramping DD/MM/YYYY dengan Ikon Kalender Rata Kanan -->
+      <label>Tanggal
+        <div style="position: relative; display: flex; align-items: center; width: 100%;">
+          <input 
+            type="text" 
+            id="manual-tanggal-display" 
+            name="tanggal"
+            placeholder="DD/MM/YYYY" 
+            maxlength="10" 
+            autocomplete="off"
+            value="{{ today_formatted }}"
+            style="width: 100%; padding-right: 2.75rem; font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 0;"
+            title="Ketik tanggal (DD/MM/YYYY) atau klik ikon kalender di kanan"
+            required
+          >
+          <button 
+            type="button" 
+            onclick="openCalendarPicker()" 
+            title="Buka kalender visual" 
+            aria-label="Pilih tanggal dari kalender"
+            style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 0.35rem; margin: 0; cursor: pointer; color: #718096; display: flex; align-items: center; justify-content: center; width: auto; height: auto;"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </button>
+        </div>
+      </label>
+
+      <!-- Jam Masuk (Format 24 Jam: 00.00 - 23.59) -->
+      <label>Jam Masuk (24 Jam)
+        <input 
+          type="text" 
+          name="waktu" 
+          class="input-jam-24" 
+          placeholder="07.00" 
+          maxlength="5" 
+          autocomplete="off"
+          style="font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0;"
+          title="Format 24 jam: 00.00 s/d 23.59"
+        >
+      </label>
+
+      <!-- Jam Pulang (Format 24 Jam: 00.00 - 23.59) -->
+      <label>Jam Pulang (24 Jam)
+        <input 
+          type="text" 
+          name="waktu_pulang" 
+          class="input-jam-24" 
+          placeholder="13.00" 
+          maxlength="5" 
+          autocomplete="off"
+          style="font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0;"
+          title="Format 24 jam: 00.00 s/d 23.59"
+        >
+      </label>
+
+      <!-- Status Hadir -->
+      <label>Status Hadir
+        <select name="status">
+          <option>Hadir</option>
+          <option>Izin</option>
+          <option>Sakit</option>
+          <option>Alpha</option>
+        </select>
+      </label>
+
+      <!-- Dropdown Pengantar dengan Teks Lainnya Menyatu -->
+      <div class="form-group-combo dropdown-with-custom">
+        <label>Nama Pengantar</label>
+        <select name="nama_pengantar">
+          <option value=""></option>
+          <option value="Ayah">Ayah</option>
+          <option value="Ibu">Ibu</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+        <input type="text" class="input-custom-text" name="nama_pengantar_lainnya" placeholder="Ketik nama pengantar..." style="display: none;">
+      </div>
+
+      <!-- Dropdown Penjemput dengan Teks Lainnya Menyatu -->
+      <div class="form-group-combo dropdown-with-custom">
+        <label>Nama Penjemput</label>
+        <select name="nama_penjemput">
+          <option value=""></option>
+          <option value="Ayah">Ayah</option>
+          <option value="Ibu">Ibu</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+        <input type="text" class="input-custom-text" name="nama_penjemput_lainnya" placeholder="Ketik nama penjemput..." style="display: none;">
+      </div>
+
+      <!-- Alasan Penjemputan Tanpa Kartu (Opsional) -->
+      <label>Alasan Tanpa Kartu (Opsional)
+        <input type="text" name="alasan_tanpa_kartu" placeholder="Cth: Kartu tertinggal / rusak">
+      </label>
+
+      <!-- Catatan (Span 2 Kolom agar proporsional) -->
+      <label class="field-span-2">Catatan
+        <input name="catatan" placeholder="Catatan tambahan (opsional)...">
+      </label>
+
+      <!-- Tombol Aksi di Baris Penuh Tersendiri di Bawah Form Rata Kanan -->
+      <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #e2e8f0;">
+        <button type="submit" class="btn-save-manual" style="width: auto !important; min-width: 220px !important; height: 44px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 0.5rem !important; font-weight: 600 !important; font-size: 0.95rem !important; border-radius: 8px !important; background: #1a56db !important; color: #ffffff !important; border: none !important; cursor: pointer !important; box-shadow: 0 2px 4px rgba(26, 86, 219, 0.2) !important; margin: 0 !important;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Simpan Presensi Manual
+        </button>
+      </div>
+    </form>
+  </div>
 </section>
+
+<script>
+  // Helper Calendar Picker Mandiri
+  function openCalendarPicker() {
+    let picker = document.getElementById('standalone-native-picker');
+    if (!picker) {
+      picker = document.createElement('input');
+      picker.type = 'date';
+      picker.id = 'standalone-native-picker';
+      picker.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
+      document.body.appendChild(picker);
+      picker.addEventListener('change', () => {
+        if (picker.value) {
+          const parts = picker.value.split('-');
+          if (parts.length === 3) {
+            const displayInput = document.getElementById('manual-tanggal-display');
+            if (displayInput) {
+              displayInput.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+          }
+        }
+      });
+    }
+
+    const currentDisplay = document.getElementById('manual-tanggal-display');
+    if (currentDisplay && currentDisplay.value) {
+      const parts = currentDisplay.value.trim().split(/[\/\-\.]/);
+      if (parts.length === 3 && parts[2].length === 4) {
+        picker.value = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+    }
+
+    if (typeof picker.showPicker === 'function') {
+      picker.showPicker();
+    } else {
+      picker.click();
+    }
+  }
+
+  // Format Auto-Slash DD/MM/YYYY saat mengetik
+  function setupDateInputMask() {
+    const input = document.getElementById('manual-tanggal-display');
+    if (!input || input.dataset.maskAttached) return;
+    input.dataset.maskAttached = 'true';
+
+    input.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/[^\d]/g, '');
+      if (val.length > 2 && val.length <= 4) {
+        val = val.slice(0, 2) + '/' + val.slice(2);
+      } else if (val.length > 4) {
+        val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4, 8);
+      }
+      e.target.value = val;
+    });
+  }
+
+  // Format Auto-Dot Jam 24 Jam (00.00 - 23.59)
+  function setupTimeInputs24() {
+    document.querySelectorAll('.input-jam-24').forEach(input => {
+      if (input.dataset.timeAttached) return;
+      input.dataset.timeAttached = 'true';
+
+      input.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/[^\d]/g, '');
+        if (val.length >= 2) {
+          let jam = parseInt(val.slice(0, 2), 10);
+          if (jam > 23) jam = 23;
+          let jamStr = String(jam).padStart(2, '0');
+          if (val.length > 2) {
+            let mnt = parseInt(val.slice(2, 4), 10);
+            if (mnt > 59) mnt = 59;
+            let mntStr = String(mnt).padStart(2, '0');
+            e.target.value = jamStr + '.' + mntStr;
+          } else {
+            e.target.value = jamStr;
+          }
+        } else {
+          e.target.value = val;
+        }
+      });
+    });
+  }
+
+  function setupDropdownsWithCustom() {
+    document.querySelectorAll('.dropdown-with-custom').forEach(container => {
+      const select = container.querySelector('select');
+      const input = container.querySelector('.input-custom-text');
+      if (!select || !input || select.dataset.customAttached) return;
+      select.dataset.customAttached = 'true';
+
+      function sync() {
+        if (select.value === 'Lainnya') {
+          input.style.display = 'block';
+          input.focus();
+        } else {
+          input.style.display = 'none';
+          input.value = '';
+        }
+      }
+
+      if (select.value === 'Lainnya' || (input.value && select.value !== 'Ayah' && select.value !== 'Ibu')) {
+        select.value = 'Lainnya';
+        input.style.display = 'block';
+      } else {
+        input.style.display = 'none';
+      }
+
+      select.addEventListener('change', sync);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setupDropdownsWithCustom();
+    setupDateInputMask();
+    setupTimeInputs24();
+  });
+
+  document.body.addEventListener('htmx:afterSwap', () => {
+    setupDropdownsWithCustom();
+    setupDateInputMask();
+    setupTimeInputs24();
+  });
+
+  setupDropdownsWithCustom();
+  setupDateInputMask();
+  setupTimeInputs24();
+</script>
 {% endblock %}

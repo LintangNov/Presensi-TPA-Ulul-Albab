@@ -8,8 +8,8 @@
   --bg: #eefcfa;
   --surface: #ffffff;
   --sidebar: #c5d9e2;
-  --primary: #a5ffd6;
-  --primary-soft: #cdfff9;
+  --primary: #3283e7;
+  --primary-soft: #859fd0;
   --border: #b3b5bb;
   --text: #2b2a26;
   --text-muted: #5f5d55;
@@ -28,15 +28,15 @@
 }
 
 html {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg, #eefcfa);
+  color: var(--text, #2b2a26);
   font-family: var(--font-body);
 }
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg, #eefcfa);
+  color: var(--text, #2b2a26);
   font-size: 1rem;
   line-height: 1.55;
 }
@@ -177,9 +177,138 @@ body {
   border-radius: var(--radius-md);
 }
 
-.manual-form button,
-.report-filters button {
+.manual-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  align-items: start;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.manual-form label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.manual-form input,
+.manual-form select {
+  margin-bottom: 0 !important;
+}
+
+.manual-form .field-span-2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 680px) {
+  .manual-form .field-span-2 {
+    grid-column: span 1;
+  }
+}
+
+.manual-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 1.25rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn-save-manual {
+  width: auto !important;
+  min-width: 220px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  background: #1a56db;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(26, 86, 219, 0.2);
+  transition: all 0.2s ease;
+}
+
+.btn-save-manual:hover {
+  background: #1e429f;
+  box-shadow: 0 4px 8px rgba(26, 86, 219, 0.3);
+  transform: translateY(-1px);
+}
+
+.form-group-combo {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.form-group-combo label {
+  display: block;
+  font-weight: 600;
+}
+
+.form-group-combo input.input-custom-text {
+  margin-top: 0.35rem;
+}
+
+/* Kolom Pemilih Tanggal Ramping DD/MM/YYYY dengan Ikon Kalender Rata Kanan */
+.custom-date-field {
+  position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
+}
+
+.custom-date-field input[type="text"] {
+  width: 100% !important;
+  padding-right: 2.5rem !important;
+  margin-bottom: 0 !important;
+  font-family: inherit;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  background-color: #fff;
+}
+
+.custom-date-field .date-picker-icon {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #718096;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.custom-date-field input[type="date"] {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 2.75rem;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
 }
 
 /* Dialog & Backdrop */
@@ -301,11 +430,11 @@ th {
 }
 
 tbody tr:nth-child(even) {
-  background: var(--primary-soft);
+  background: var(--primary-soft, #cdfff9);
 }
 
 tbody tr:hover {
-  background: var(--frozen-water);
+  background: var(--frozen-water, #cdfff9);
 }
 
 /* Status Badges */
@@ -937,4 +1066,4 @@ input:checked + .switch-slider:before {
   height: 32px;
   color: var(--text-muted);
   font-weight: 700;
-}
+}

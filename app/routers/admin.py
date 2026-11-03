@@ -8,7 +8,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel
 
-from app.db import connect, reset_all_data
+from app.db import connect, reset_all_data, get_setting, set_setting
 from app.services.students import StudentService
 from app.services.excel_io import export_workbook, preview_students, student_template
 from app.services.reports import ReportService
@@ -37,10 +37,13 @@ def context(request: Request, **values: Any) -> dict[str, Any]:
 
 def today_data() -> dict[str, Any]:
     today = datetime.now().astimezone().date().isoformat()
+    parts = today.split("-")
+    today_formatted = f"{parts[2]}/{parts[1]}/{parts[0]}"
     with connect(DB_PATH) as connection:
         rows = connection.execute(
             "SELECT s.id, s.nomor_urut, s.nama, s.paket, s.aktif, a.id AS absensi_id, a.tanggal, "
-            "a.waktu, a.waktu_pulang, a.status_pulang, a.denda_menit, a.status, a.sumber, a.catatan "
+            "a.waktu, a.waktu_pulang, a.status_pulang, a.denda_menit, a.status, a.sumber, a.catatan, "
+            "a.nama_pengantar, a.nama_penjemput, a.alasan_tanpa_kartu "
             "FROM santri s LEFT JOIN absensi a ON a.santri_id = s.id AND a.tanggal = ? "
             "ORDER BY s.nomor_urut, s.nama",
             (today,),
@@ -57,6 +60,8 @@ def today_data() -> dict[str, Any]:
     denda_list = [row for row in rows if (row["denda_menit"] or 0) > 0]
     absent = [row for row in rows if row["aktif"] and row["status"] is None]
     return {
+        "today": today,
+        "today_formatted": today_formatted,
         "rows": rows,
         "present_count": len(present),
         "picked_up_count": len(picked_up),
@@ -109,17 +114,39 @@ async def save_manual(
     waktu_pulang: str = Form(""),
     status_pulang: str = Form(""),
     denda_menit: int = Form(0),
+    nama_pengantar: str = Form(""),
+    nama_penjemput: str = Form(""),
+    nama_pengantar_lainnya: str = Form(""),
+    nama_penjemput_lainnya: str = Form(""),
+    alasan_tanpa_kartu: str = Form(""),
 ):
     local_only(request)
+    # Normalisasi format tanggal DD/MM/YYYY ke YYYY-MM-DD jika diperlukan
+    clean_tanggal = tanggal.strip()
+    if "/" in clean_tanggal:
+        t_parts = clean_tanggal.split("/")
+        if len(t_parts) == 3 and len(t_parts[0]) <= 2 and len(t_parts[2]) == 4:
+            clean_tanggal = f"{t_parts[2]}-{t_parts[1].zfill(2)}-{t_parts[0].zfill(2)}"
+
+    # Normalisasi jam 24 jam (misal 07.00 atau 07:00 menjadi 07:00)
+    clean_waktu = waktu.strip().replace(".", ":") if waktu else ""
+    clean_waktu_pulang = waktu_pulang.strip().replace(".", ":") if waktu_pulang else ""
+
+    # Jika dropdown dipilih "Lainnya", gunakan nilai dari input teks kustom
+    final_nama_pengantar = nama_pengantar_lainnya or None if nama_pengantar == "Lainnya" else (nama_pengantar or None)
+    final_nama_penjemput = nama_penjemput_lainnya or None if nama_penjemput == "Lainnya" else (nama_penjemput or None)
     reports.save_manual(
         student_id=student_id,
-        tanggal=tanggal,
+        tanggal=clean_tanggal,
         status=status,
-        waktu=waktu,
+        waktu=clean_waktu,
         catatan=catatan,
-        waktu_pulang=waktu_pulang or None,
+        waktu_pulang=clean_waktu_pulang or None,
         status_pulang=status_pulang or None,
         denda_menit=denda_menit,
+        nama_pengantar=final_nama_pengantar,
+        nama_penjemput=final_nama_penjemput,
+        alasan_tanpa_kartu=alasan_tanpa_kartu or None,
     )
     return RedirectResponse("/admin/hari-ini", status_code=303)
 
@@ -335,8 +362,10 @@ async def register_card(request: Request, student_id: int):
 
 
 @router.get("/admin/fields", response_class=HTMLResponse)
-async def fields_page(request: Request, reset: str = ""):
+async def fields_page(request: Request, reset: str = "", saved: str = ""):
     local_only(request)
+    with connect(DB_PATH) as connection:
+        jeda_tap = get_setting(connection, "jeda_tap_pulang_menit") or "60"
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="admin/fields.html",
@@ -345,8 +374,19 @@ async def fields_page(request: Request, reset: str = ""):
             fields=students.fields(),
             backup_terakhir=last_backup(DB_PATH),
             reset_sukses=(reset == "sukses"),
+            saved_sukses=(saved == "sukses"),
+            jeda_tap_pulang=jeda_tap,
         ),
     )
+
+
+@router.post("/admin/settings/presensi")
+async def save_presensi_settings(request: Request, jeda_tap_pulang_menit: int = Form(60)):
+    local_only(request)
+    jeda_val = max(1, jeda_tap_pulang_menit)
+    with connect(DB_PATH) as connection:
+        set_setting(connection, "jeda_tap_pulang_menit", str(jeda_val))
+    return RedirectResponse("/admin/fields?saved=sukses", status_code=303)
 
 
 @router.post("/admin/fields")
