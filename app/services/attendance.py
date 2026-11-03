@@ -164,52 +164,80 @@ class AttendanceService:
                     waktu_masuk = attendance["waktu"]
                     waktu_pulang_existing = attendance["waktu_pulang"]
 
-                    # Cek jeda tap dari waktu masuk (minimal 1 menit untuk dianggap tap pulang, mencegah double tap instan)
                     masuk_mins = parse_time_minutes(waktu_masuk) if waktu_masuk else 0
                     current_mins = parse_time_minutes(time)
                     diff_mins = current_mins - masuk_mins
 
-                    if diff_mins < 1 and not waktu_pulang_existing:
-                        # Tap dalam selisih kurang dari 1 menit setelah masuk -> duplikat masuk
-                        result = "duplikat"
-                        waktu = waktu_masuk
-                        tipe_tap = "masuk"
-                        custom_message = f"Absensi masuk baru saja dicatat pada pukul {waktu_masuk}."
-                    elif not waktu_pulang_existing:
-                        # Tap kedua -> Penjemputan / Pulang
-                        tipe_tap = "pulang"
-                        waktu = time
-                        student_keys = student.keys() if hasattr(student, "keys") else []
-                        paket = student["paket"] if "paket" in student_keys else "A"
+                    student_keys = student.keys() if hasattr(student, "keys") else []
+                    paket = student["paket"] if "paket" in student_keys else "A"
 
-                        # Batas penjemputan dan toleransi 15 menit
-                        # Paket A (Half Day): 13.00 toleransi 15 mnt -> 13.15 (795 menit)
-                        # Paket B (Full Day): 16.00 toleransi 15 mnt -> 16.15 (975 menit)
-                        if paket == "B":
-                            toleransi_mins = 16 * 60 + 15
-                            batas_teks = "16:00 (toleransi 16:15)"
-                        else:
-                            toleransi_mins = 13 * 60 + 15
-                            batas_teks = "13:00 (toleransi 13:15)"
+                    # Ambil setting jeda tap pulang (default: 60 menit)
+                    jeda_setting = get_setting(connection, "jeda_tap_pulang_menit")
+                    try:
+                        jeda_menit = int(jeda_setting) if jeda_setting else 60
+                    except (ValueError, TypeError):
+                        jeda_menit = 60
 
-                        if current_mins > toleransi_mins:
-                            denda_menit = current_mins - toleransi_mins
-                            status_pulang = "Denda Keterlambatan"
-                            result = "denda"
+                    # Jam keluar normal per paket:
+                    # Paket A (Half Day): 13:00 (780 menit)
+                    # Paket B (Full Day): 16:00 (960 menit)
+                    jam_pulang_mins = (16 * 60) if paket == "B" else (13 * 60)
+                    jam_pulang_str = "16:00" if paket == "B" else "13:00"
+
+                    # Tap keluar hanya bisa dilakukan x menit setelah tap masuk
+                    # ATAU jam keluar masing-masing paket sudah tiba
+                    boleh_pulang = (diff_mins >= jeda_menit) or (current_mins >= jam_pulang_mins)
+
+                    if not waktu_pulang_existing:
+                        if diff_mins < 1:
+                            # Tap dalam selisih kurang dari 1 menit setelah masuk -> duplikat masuk instan
+                            result = "duplikat"
+                            waktu = waktu_masuk
+                            tipe_tap = "masuk"
+                            custom_message = f"Absensi masuk baru saja dicatat pada pukul {waktu_masuk}."
+                        elif not boleh_pulang:
+                            # Belum boleh tap pulang (mencegah kartu tidak sengaja ter-tap 2 kali di pagi hari)
+                            result = "duplikat"
+                            waktu = waktu_masuk
+                            tipe_tap = "masuk"
                             custom_message = (
-                                f"Penjemputan lewat batas {batas_teks}. "
-                                f"Terlambat {denda_menit} menit. Dikenakan denda."
+                                f"Absensi masuk baru saja dicatat pada pukul {waktu_masuk}. "
+                                f"Tap pulang baru dapat dilakukan setelah jeda {jeda_menit} menit "
+                                f"atau mulai pukul {jam_pulang_str}."
                             )
                         else:
-                            status_pulang = "Tepat Waktu"
-                            result = "pulang"
-                            custom_message = f"Penjemputan tepat waktu ({time}). Sampai jumpa!"
+                            # Tap kedua -> Penjemputan / Pulang
+                            tipe_tap = "pulang"
+                            waktu = time
 
-                        connection.execute(
-                            "UPDATE absensi SET waktu_pulang = ?, status_pulang = ?, denda_menit = ? "
-                            "WHERE santri_id = ? AND tanggal = ?",
-                            (time, status_pulang, denda_menit, student_id, date),
-                        )
+                            # Batas penjemputan dan toleransi 15 menit
+                            # Paket A (Half Day): 13.00 toleransi 15 mnt -> 13.15 (795 menit)
+                            # Paket B (Full Day): 16.00 toleransi 15 mnt -> 16.15 (975 menit)
+                            if paket == "B":
+                                toleransi_mins = 16 * 60 + 15
+                                batas_teks = "16:00 (toleransi 16:15)"
+                            else:
+                                toleransi_mins = 13 * 60 + 15
+                                batas_teks = "13:00 (toleransi 13:15)"
+
+                            if current_mins > toleransi_mins:
+                                denda_menit = current_mins - toleransi_mins
+                                status_pulang = "Denda Keterlambatan"
+                                result = "denda"
+                                custom_message = (
+                                    f"Penjemputan lewat batas {batas_teks}. "
+                                    f"Terlambat {denda_menit} menit. Dikenakan denda."
+                                )
+                            else:
+                                status_pulang = "Tepat Waktu"
+                                result = "pulang"
+                                custom_message = f"Penjemputan tepat waktu ({time}). Sampai jumpa!"
+
+                            connection.execute(
+                                "UPDATE absensi SET waktu_pulang = ?, status_pulang = ?, denda_menit = ? "
+                                "WHERE santri_id = ? AND tanggal = ?",
+                                (time, status_pulang, denda_menit, student_id, date),
+                            )
                     else:
                         # Sudah absen pulang sebelumnya
                         result = "duplikat"

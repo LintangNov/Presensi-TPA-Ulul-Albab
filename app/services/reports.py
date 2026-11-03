@@ -29,7 +29,7 @@ class ReportService:
         with connect(self.db_path) as connection:
             rows = connection.execute(
                 "SELECT a.tanggal, s.nomor_urut, s.nama, s.paket, a.waktu, a.waktu_pulang, a.status_pulang, a.denda_menit, "
-                "a.status, a.sumber, a.catatan, s.id AS santri_id, s.extra_data "
+                "a.status, a.sumber, a.catatan, a.nama_pengantar, a.nama_penjemput, a.alasan_tanpa_kartu, s.id AS santri_id, s.extra_data "
                 "FROM absensi a JOIN santri s ON s.id = a.santri_id "
                 f"WHERE {' AND '.join(clauses)} ORDER BY a.tanggal, s.nomor_urut, s.nama",
                 params,
@@ -73,6 +73,9 @@ class ReportService:
                                 "status": "Alpha",
                                 "sumber": "otomatis",
                                 "catatan": None,
+                                "nama_pengantar": None,
+                                "nama_penjemput": None,
+                                "alasan_tanpa_kartu": None,
                                 "santri_id": student["id"],
                                 "extra_data": student["extra_data"],
                             }
@@ -134,17 +137,21 @@ class ReportService:
         waktu_pulang: str | None = None,
         status_pulang: str | None = None,
         denda_menit: int = 0,
+        nama_pengantar: str | None = None,
+        nama_penjemput: str | None = None,
+        alasan_tanpa_kartu: str | None = None,
     ) -> None:
         if status not in {"Hadir", "Izin", "Sakit", "Alpha"}:
             raise ValueError("Status absensi tidak valid.")
         with connect(self.db_path) as connection:
             connection.execute(
-                "INSERT INTO absensi (santri_id, tanggal, waktu, waktu_pulang, status_pulang, denda_menit, status, sumber, catatan) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, 'manual', ?) "
+                "INSERT INTO absensi (santri_id, tanggal, waktu, waktu_pulang, status_pulang, denda_menit, status, sumber, catatan, nama_pengantar, nama_penjemput, alasan_tanpa_kartu) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 'manual', ?, ?, ?, ?) "
                 "ON CONFLICT(santri_id, tanggal) DO UPDATE SET waktu=excluded.waktu, "
                 "waktu_pulang=excluded.waktu_pulang, status_pulang=excluded.status_pulang, "
-                "denda_menit=excluded.denda_menit, status=excluded.status, sumber='manual', catatan=excluded.catatan",
-                (student_id, tanggal, waktu or None, waktu_pulang or None, status_pulang or None, denda_menit, status, catatan or None),
+                "denda_menit=excluded.denda_menit, status=excluded.status, sumber='manual', catatan=excluded.catatan, "
+                "nama_pengantar=excluded.nama_pengantar, nama_penjemput=excluded.nama_penjemput, alasan_tanpa_kartu=excluded.alasan_tanpa_kartu",
+                (student_id, tanggal, waktu or None, waktu_pulang or None, status_pulang or None, denda_menit, status, catatan or None, nama_pengantar, nama_penjemput, alasan_tanpa_kartu or None),
             )
 
     def delete_manual(self, attendance_id: int) -> None:

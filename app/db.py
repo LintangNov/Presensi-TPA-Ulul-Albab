@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from typing import Iterator
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 4
 
 
 class ManagedConnection(sqlite3.Connection):
@@ -65,6 +65,9 @@ def initialize(db_path: Path) -> None:
                     status TEXT NOT NULL DEFAULT 'Hadir',
                     sumber TEXT NOT NULL DEFAULT 'kartu',
                     catatan TEXT,
+                    nama_pengantar TEXT,
+                    nama_penjemput TEXT,
+                    alasan_tanpa_kartu TEXT,
                     UNIQUE(santri_id, tanggal)
                 );
                 CREATE TABLE tap_log (
@@ -81,7 +84,7 @@ def initialize(db_path: Path) -> None:
                     key TEXT PRIMARY KEY,
                     value TEXT
                 );
-                INSERT INTO schema_version (version) VALUES (2);
+                INSERT INTO schema_version (version) VALUES (4);
                 """
             )
         else:
@@ -97,6 +100,12 @@ def initialize(db_path: Path) -> None:
                 connection.execute("ALTER TABLE absensi ADD COLUMN status_pulang TEXT")
             if "denda_menit" not in absensi_cols:
                 connection.execute("ALTER TABLE absensi ADD COLUMN denda_menit INTEGER DEFAULT 0")
+            if "nama_pengantar" not in absensi_cols:
+                connection.execute("ALTER TABLE absensi ADD COLUMN nama_pengantar TEXT")
+            if "nama_penjemput" not in absensi_cols:
+                connection.execute("ALTER TABLE absensi ADD COLUMN nama_penjemput TEXT")
+            if "alasan_tanpa_kartu" not in absensi_cols:
+                connection.execute("ALTER TABLE absensi ADD COLUMN alasan_tanpa_kartu TEXT")
 
             if current["version"] < SCHEMA_VERSION:
                 connection.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))

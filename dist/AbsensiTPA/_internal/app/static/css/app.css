@@ -106,4 +106,7 @@ li { margin: .75rem 0; text-align: left; }
 .summary-grid strong { font-size: 2rem; }
 td form { margin-bottom: .4rem; }
 
+.text-danger { color: #c53030; }
+.text-muted-2 { color: #4a5568; }
+
 

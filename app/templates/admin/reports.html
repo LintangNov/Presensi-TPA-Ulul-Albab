@@ -53,6 +53,8 @@
       <th>Paket</th>
       <th>Jam Masuk</th>
       <th>Jam Pulang</th>
+      <th>Pengantar</th>
+      <th>Penjemput</th>
       <th>Status Pulang</th>
       <th>Status Hadir</th>
       <th>Sumber</th>
@@ -66,6 +68,15 @@
       <td>{{ "Paket A" if row.paket == "A" else "Paket B" }}</td>
       <td>{{ row.waktu or "-" }}</td>
       <td>{{ row.waktu_pulang or "-" }}</td>
+      <td>{{ row.nama_pengantar or "-" }}</td>
+      <td>
+        {{ row.nama_penjemput or "-" }}
+        {% if row.alasan_tanpa_kartu %}
+          <div style="font-size: 0.75rem; color: #718096;" title="Alasan tanpa kartu">
+            ℹ️ {{ row.alasan_tanpa_kartu }}
+          </div>
+        {% endif %}
+      </td>
       <td>
         {% if row.status_pulang %}
           {% if "Denda" in row.status_pulang %}

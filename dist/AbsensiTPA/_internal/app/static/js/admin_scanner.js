@@ -31,6 +31,9 @@
     }, 3200);
   }
 
+  // Dibuat global agar bisa dipakai template admin lain (mis. halaman Simulator RFID)
+  window.showAdminToast = showAdminToast;
+
   function updateScannerUI() {
     const active = isScannerActive();
     const toggle = document.querySelector("#scanner-toggle");
@@ -187,6 +190,24 @@
             ? "Mode Scanner DIAKTIFKAN. Scanner siap menerima tap kartu."
             : "Mode Scanner DINONAKTIFKAN. Formulir dapat diedit.",
           e.target.checked ? "success" : "info"
+        );
+      });
+    }
+
+    // Klik area toggle box untuk menyala/matikan scanner
+    const toggleBox = document.querySelector("#scanner-toggle-container");
+    if (toggleBox) {
+      toggleBox.addEventListener("click", (e) => {
+        // Hindari trigger duplo jika klik langsung pada checkbox
+        if (e.target.closest("input[type=checkbox]")) return;
+        const next = !isScannerActive();
+        toggle.checked = next;
+        setScannerActive(next);
+        showAdminToast(
+          next
+            ? "Mode Scanner DIAKTIFKAN. Scanner siap menerima tap kartu."
+            : "Mode Scanner DINONAKTIFKAN. Formulir dapat diedit.",
+          next ? "success" : "info"
         );
       });
     }

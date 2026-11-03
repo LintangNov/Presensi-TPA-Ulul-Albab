@@ -16,7 +16,7 @@
 </form>
 
 <details id="tambah-santri" style="margin-bottom: 1.5rem;" open>
-  <summary style="cursor: pointer; font-weight: 700;">➕ Tambah Murid Baru</summary>
+  <summary style="cursor: pointer; font-weight: 700;">Tambah Murid Baru</summary>
   <form method="post" action="/admin/santri" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
     <label>Nama Lengkap <input name="nama" placeholder="Contoh: Muhammad Andi" required></label>
     <label>Nomor Urut / Absen <input name="nomor_urut" type="number" placeholder="Contoh: 1"></label>
@@ -54,13 +54,9 @@
   <tbody>
     {% for student in students %}
     <tr>
-      <td><strong>{{ student.nomor_urut or "-" }}</strong></td>
-      <td><strong>{{ student.nama }}</strong></td>
-      <td>
-        <span class="badge" style="background: {% if student.paket == 'B' %}#c6f6d5{% else %}#e2e8f0{% endif %}; font-size: 0.8rem;">
-          {{ "Paket A (Half Day)" if student.paket == "A" else "Paket B (Full Day)" }}
-        </span>
-      </td>
+      <td>{{ student.nomor_urut or "-" }}</td>
+      <td>{{ student.nama }}</td>
+      <td>{{ "Paket A (Half Day)" if student.paket == "A" else "Paket B (Full Day)" }}</td>
       <td>
         {% if student.rfid_uid %}
         <code style="font-weight: 600; color: #2b6cb0;">{{ student.rfid_uid }}</code>
@@ -84,11 +80,11 @@
             data-register-paket="{{ 'Paket A (Half Day)' if student.paket == 'A' else 'Paket B (Full Day)' }}"
             title="Daftarkan / Ganti Kartu RFID"
           >
-            💳 Daftarkan Kartu
+            Daftarkan Kartu
           </button>
 
           <details style="display: inline-block; margin: 0; padding: 0; border: none; background: transparent;">
-            <summary class="btn-sm btn-secondary" style="list-style: none; cursor: pointer;">✏️ Edit</summary>
+            <summary class="btn-sm btn-secondary" style="list-style: none; cursor: pointer;">Edit</summary>
             <div style="position: absolute; right: 2rem; background: #fff; border: 1px solid #cbd5e0; border-radius: 10px; padding: 1.25rem; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 50; width: 320px;">
               <h4 style="margin: 0 0 1rem 0; font-size: 1rem;">Edit Murid: {{ student.nama }}</h4>
               <form method="post" action="/admin/santri/{{ student.id }}" style="display: flex; flex-direction: column; gap: 0.75rem;">
@@ -123,7 +119,7 @@
             data-delete-name="{{ student.nama }}"
             title="Hapus Murid"
           >
-            🗑️ Hapus
+            Hapus
           </button>
         </div>
       </td>
@@ -149,7 +145,7 @@
     </div>
 
     <div class="rfid-scan-indicator">
-      <div class="rfid-pulse-icon">📶</div>
+      <div class="rfid-pulse-icon"></div>
       <p id="register-message" style="margin: 0; font-size: 0.9rem; color: #4a5568; text-align: center; font-weight: 500;">
         Tempelkan kartu RFID pada reader USB...
       </p>

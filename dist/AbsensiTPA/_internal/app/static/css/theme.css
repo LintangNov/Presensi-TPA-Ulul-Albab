@@ -8,8 +8,8 @@
   --bg: #eefcfa;
   --surface: #ffffff;
   --sidebar: #c5d9e2;
-  --primary: #a5ffd6;
-  --primary-soft: #cdfff9;
+  --primary: #3283e7;
+  --primary-soft: #859fd0;
   --border: #b3b5bb;
   --text: #2b2a26;
   --text-muted: #5f5d55;
@@ -28,15 +28,15 @@
 }
 
 html {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg, #eefcfa);
+  color: var(--text, #2b2a26);
   font-family: var(--font-body);
 }
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg, #eefcfa);
+  color: var(--text, #2b2a26);
   font-size: 1rem;
   line-height: 1.55;
 }
@@ -291,19 +291,21 @@ td {
   border-bottom: 1px solid var(--border);
   color: var(--text);
   text-align: left;
+  font-size: 0.85rem;
 }
 
 th {
   background: var(--sidebar);
   font-weight: 800;
+  font-size: 0.85rem;
 }
 
 tbody tr:nth-child(even) {
-  background: var(--primary-soft);
+  background: var(--primary-soft, #cdfff9);
 }
 
 tbody tr:hover {
-  background: var(--frozen-water);
+  background: var(--frozen-water, #cdfff9);
 }
 
 /* Status Badges */
@@ -862,4 +864,77 @@ input:checked + .switch-slider:before {
   color: var(--text-muted);
   font-style: italic;
   margin: 0.75rem 0 1.25rem 0;
-}
+}
+
+/* ============================================================
+   Pagination (Daftar Murid / Simulator RFID)
+   ============================================================ */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.pagination-info {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.pagination-links {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 32px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.pagination-btn:hover {
+  background: var(--primary-soft);
+  border-color: var(--frozen-water);
+  text-decoration: none;
+}
+
+.pagination-btn.active {
+  background: var(--sidebar);
+  border-color: var(--sidebar);
+  color: var(--text);
+  cursor: default;
+}
+
+.pagination-btn.disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  background: var(--bg);
+}
+
+.pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 32px;
+  color: var(--text-muted);
+  font-weight: 700;
+}

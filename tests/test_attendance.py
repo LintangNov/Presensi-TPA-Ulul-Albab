@@ -96,7 +96,29 @@ def test_database_pragmas_and_schema_version(service):
         assert connection.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
         assert connection.execute("PRAGMA foreign_keys").fetchone()[0] == 1
         assert connection.execute("PRAGMA busy_timeout").fetchone()[0] == 5000
-        assert connection.execute("SELECT version FROM schema_version").fetchone()[0] == 2
+        assert connection.execute("SELECT version FROM schema_version").fetchone()[0] == 4
+
+
+def test_tap_cooldown_and_packet_exit_time(service):
+    # Murid Paket A tap masuk jam 07:15
+    service.add_student("Zaki", "ZAKI", paket="A")
+    t_masuk = datetime.fromisoformat("2026-10-08T07:15:00+07:00")
+    res_in = service.tap("ZAKI", "lap", "z-in", current_time=t_masuk)
+    assert res_in["hasil"] == "berhasil"
+    assert res_in["tipe_tap"] == "masuk"
+
+    # Tap lagi tidak sengaja 10 menit kemudian (07:25), belum 60 menit dan belum jam 13:00
+    t_pagi_lagi = datetime.fromisoformat("2026-10-08T07:25:00+07:00")
+    res_repeat = service.tap("ZAKI", "lap", "z-rep", current_time=t_pagi_lagi)
+    assert res_repeat["hasil"] == "duplikat"
+    assert res_repeat["tipe_tap"] == "masuk"
+    assert "13:00" in res_repeat["pesan"]
+
+    # Tap saat jam keluar paket tiba (13:05) -> berhasil pulang
+    t_siang = datetime.fromisoformat("2026-10-08T13:05:00+07:00")
+    res_out = service.tap("ZAKI", "lap", "z-out", current_time=t_siang)
+    assert res_out["hasil"] == "pulang"
+    assert res_out["tipe_tap"] == "pulang"
 
 
 def test_age_ms_uses_laptop_time_for_attendance(service):
