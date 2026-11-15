@@ -226,3 +226,38 @@ def test_import_previews_ttl_and_lru():
     import_previews.clear()
 
 
+def test_scan_page_renders_focus_guard():
+    from app.main import app
+
+    messages = []
+    body = bytearray()
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        messages.append(message)
+        if message["type"] == "http.response.body":
+            body.extend(message.get("body", b""))
+
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0", "spec_version": "2.0"},
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": "/scan",
+        "raw_path": b"/scan",
+        "query_string": b"",
+        "headers": [],
+        "client": ("127.0.0.1", 1234),
+        "server": ("127.0.0.1", 8000),
+    }
+    asyncio.run(app(scope, receive, send))
+    assert messages[0]["status"] == 200
+    html = body.decode("utf-8")
+    assert "tv-focus-warning" in html
+    assert "SCANNER TIDAK AKTIF" in html
+    assert "btn-activate-scanner" in html
+
+

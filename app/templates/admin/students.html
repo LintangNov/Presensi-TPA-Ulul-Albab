@@ -57,7 +57,7 @@
       <td>{{ student.nomor_urut or "-" }}</td>
       <td>{{ student.nama }}</td>
       <td>{{ "Paket A (Half Day)" if student.paket == "A" else "Paket B (Full Day)" }}</td>
-      <td>
+      <td id="student-cards-cell-{{ student.id }}">
         <div style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem;">
           <div>
             <span style="font-size: 0.75rem; color: #718096; font-weight: 600;">Kartu 1:</span>
@@ -92,6 +92,7 @@
           <button 
             type="button" 
             class="btn-sm" 
+            id="btn-register-student-{{ student.id }}"
             data-register-student="{{ student.id }}" 
             data-register-name="{{ student.nama }}"
             data-register-no="{{ student.nomor_urut or '-' }}"
@@ -307,6 +308,38 @@
   document.querySelector("#btn-close-register").addEventListener("click", closeRegister);
   document.querySelector("#btn-cancel-register").addEventListener("click", closeRegister);
 
+  function updateTableRowCards(studentId, card1Uid, card2Uid, customNo) {
+    const cell = document.querySelector(`#student-cards-cell-${studentId}`);
+    const btn = document.querySelector(`#btn-register-student-${studentId}`);
+    if (btn) {
+      btn.dataset.card1Uid = card1Uid || "";
+      btn.dataset.card2Uid = card2Uid || "";
+    }
+    if (!cell) return;
+
+    const noText = customNo ? `No: #${customNo}` : "";
+    const card1Html = card1Uid
+      ? `<code style="font-weight: 600; color: #2b6cb0;">${card1Uid}</code> <span style="font-size: 0.75rem; background: #ebf8ff; color: #2b6cb0; padding: 0.1rem 0.35rem; border-radius: 4px;">${noText}</span>`
+      : `<span style="color: #a0aec0; font-size: 0.8rem; font-style: italic;">Belum ada</span>`;
+
+    const card2Html = card2Uid
+      ? `<code style="font-weight: 600; color: #2b6cb0;">${card2Uid}</code> <span style="font-size: 0.75rem; background: #ebf8ff; color: #2b6cb0; padding: 0.1rem 0.35rem; border-radius: 4px;">${noText}</span>`
+      : `<span style="color: #a0aec0; font-size: 0.8rem; font-style: italic;">Belum ada</span>`;
+
+    cell.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem;">
+        <div>
+          <span style="font-size: 0.75rem; color: #718096; font-weight: 600;">Kartu 1:</span>
+          ${card1Html}
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: #718096; font-weight: 600;">Kartu 2:</span>
+          ${card2Html}
+        </div>
+      </div>
+    `;
+  }
+
   // Hapus Kartu 1
   btnDelCard1.addEventListener("click", async (e) => {
     e.preventDefault();
@@ -317,9 +350,11 @@
       if (!res.ok) throw new Error("Gagal menghapus Kartu 1");
       currentCard1Uid = "";
       updateSlotView();
-      registerMessage.textContent = "Kartu 1 berhasil dihapus.";
+      const noAbsen = document.querySelector(`#btn-register-student-${registerStudentId}`)?.dataset.registerNo || "";
+      updateTableRowCards(registerStudentId, currentCard1Uid, currentCard2Uid, noAbsen);
+      registerMessage.textContent = "✓ Kartu 1 berhasil dihapus.";
       registerMessage.style.color = "#276749";
-      setTimeout(() => window.location.reload(), 700);
+      registerUid.focus();
     } catch (err) {
       registerMessage.textContent = err.message;
       registerMessage.style.color = "#c53030";
@@ -336,9 +371,11 @@
       if (!res.ok) throw new Error("Gagal menghapus Kartu 2");
       currentCard2Uid = "";
       updateSlotView();
-      registerMessage.textContent = "Kartu 2 berhasil dihapus.";
+      const noAbsen = document.querySelector(`#btn-register-student-${registerStudentId}`)?.dataset.registerNo || "";
+      updateTableRowCards(registerStudentId, currentCard1Uid, currentCard2Uid, noAbsen);
+      registerMessage.textContent = "✓ Kartu 2 berhasil dihapus.";
       registerMessage.style.color = "#276749";
-      setTimeout(() => window.location.reload(), 700);
+      registerUid.focus();
     } catch (err) {
       registerMessage.textContent = err.message;
       registerMessage.style.color = "#c53030";
@@ -365,13 +402,24 @@
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || "Kartu tidak dapat didaftarkan.");
       
-      registerMessage.textContent = `[OK] Kartu ${slot} (${result.uid}) berhasil dipasangkan ke ${result.nama} (Nomor Kartu: #${result.nomor_kartu_custom})!`;
-      registerMessage.style.color = "#276749";
+      if (slot === 1) {
+        currentCard1Uid = result.uid;
+        // Jika slot 2 masih kosong, otomatis alihkan pilihan radio ke Kartu 2 untuk kartu berikutnya
+        if (!currentCard2Uid) {
+          const slot2Radio = document.querySelector('input[name="card_slot"][value="2"]');
+          if (slot2Radio) slot2Radio.checked = true;
+        }
+      } else {
+        currentCard2Uid = result.uid;
+      }
 
-      setTimeout(() => {
-        closeRegister();
-        window.location.reload();
-      }, 900);
+      updateSlotView();
+      updateTableRowCards(registerStudentId, currentCard1Uid, currentCard2Uid, result.nomor_kartu_custom || "");
+
+      registerMessage.textContent = `[OK] Kartu ${slot} (${result.uid}) berhasil dipasangkan ke ${result.nama}! Siap menerima kartu berikutnya...`;
+      registerMessage.style.color = "#276749";
+      registerUid.value = "";
+      registerUid.focus();
     } catch (error) {
       registerMessage.textContent = error.message;
       registerMessage.style.color = "#c53030";
