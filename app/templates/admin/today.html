@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
 {% block content %}
 <section class="today-page-container">
-  <div id="today-live-section" hx-get="/admin/hari-ini" hx-trigger="every 3s" hx-select="#today-live-section" hx-target="#today-live-section" hx-swap="outerHTML">
+  <div id="today-live-section" hx-get="/admin/hari-ini" hx-trigger="every 3s [!document.querySelector('#today-live-section details[open]') && !document.querySelector('#today-live-section input:focus, #today-live-section select:focus, #today-live-section textarea:focus')]" hx-select="#today-live-section" hx-target="#today-live-section" hx-swap="outerHTML">
     <h2>Absensi Hari Ini</h2>
     <div class="summary-grid">
       <article><strong>{{ present_count }} dari {{ active_count }}</strong><span>murid hadir masuk</span></article>
@@ -255,7 +255,7 @@
 
       <!-- Alasan Masuk Tanpa Kartu (Opsional) -->
       <label>Alasan Masuk Tanpa Kartu (Opsional)
-        <input type="text" name="alasan_tanpa_kartu" placeholder="Cth: Kartu santri tertinggal">
+        <input type="text" name="alasan_tanpa_kartu" placeholder="Cth: Kartu murid tertinggal">
       </label>
 
       <!-- Alasan Penjemputan Tanpa Kartu (Opsional) -->

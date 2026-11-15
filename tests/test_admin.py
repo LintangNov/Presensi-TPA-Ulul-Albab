@@ -94,11 +94,11 @@ def test_admin_routes_are_localhost_only():
     assert _run_asgi(app, "/admin", "127.0.0.1") == 200
 
 
-def test_style_preview_is_localhost_only():
+def test_settings_route_is_localhost_only():
     from app.main import app
 
-    assert _run_asgi(app, "/admin/gaya", "192.168.1.50") == 403
-    assert _run_asgi(app, "/admin/gaya", "127.0.0.1") == 200
+    assert _run_asgi(app, "/admin/fields", "192.168.1.50") == 403
+    assert _run_asgi(app, "/admin/fields", "127.0.0.1") == 200
 
 
 def test_delete_student_and_reset_data(tmp_path):
@@ -259,5 +259,69 @@ def test_scan_page_renders_focus_guard():
     assert "tv-focus-warning" in html
     assert "SCANNER TIDAK AKTIF" in html
     assert "btn-activate-scanner" in html
+
+
+def test_route_alias_admin_murid_and_santri():
+    from app.main import app
+
+    assert _run_asgi(app, "/admin/murid", "127.0.0.1") == 200
+    assert _run_asgi(app, "/admin/santri", "127.0.0.1") == 200
+    assert _run_asgi(app, "/admin/murid", "192.168.1.100") == 403
+
+
+def test_reports_parameter_student_id_and_legacy_santri_id(tmp_path, monkeypatch):
+    from app.main import app
+    from app.routers import admin as admin_module
+    from app.services.reports import ReportService
+    from app.services.students import StudentService
+
+    db_path = tmp_path / "test_reports_param.db"
+    students = StudentService(db_path)
+    reports = ReportService(db_path)
+    monkeypatch.setattr(admin_module, "students", students)
+    monkeypatch.setattr(admin_module, "reports", reports)
+
+    sid = students.save_student(None, "Fulan", 1, {})
+    reports.save_manual(sid, "2026-11-15", "Hadir", "07:00", "")
+
+    # Menggunakan student_id
+    code1, html1 = _run_asgi_full(app, f"/admin/rekap?student_id={sid}")
+    assert code1 == 200
+    assert "Fulan" in html1
+
+    # Menggunakan legacy santri_id
+    code2, html2 = _run_asgi_full(app, f"/admin/rekap?santri_id={sid}")
+    assert code2 == 200
+    assert "Fulan" in html2
+
+
+def _run_asgi_full(app, path):
+    messages = []
+    body = bytearray()
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        messages.append(message)
+        if message["type"] == "http.response.body":
+            body.extend(message.get("body", b""))
+
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0", "spec_version": "2.0"},
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": path.split("?")[0],
+        "raw_path": path.split("?")[0].encode(),
+        "query_string": path.split("?")[1].encode() if "?" in path else b"",
+        "headers": [],
+        "client": ("127.0.0.1", 1234),
+        "server": ("127.0.0.1", 8000),
+    }
+    asyncio.run(app(scope, receive, send))
+    status = next((m["status"] for m in messages if m["type"] == "http.response.start"), 500)
+    return status, body.decode("utf-8", errors="replace")
 
 

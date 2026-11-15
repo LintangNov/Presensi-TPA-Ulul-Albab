@@ -164,16 +164,6 @@ async def dashboard(request: Request):
     )
 
 
-@router.get("/admin/gaya", response_class=HTMLResponse)
-async def style_preview(request: Request):
-    local_only(request)
-    return request.app.state.templates.TemplateResponse(
-        request=request,
-        name="admin/style_preview.html",
-        context=context(request, title="Pratinjau Gaya"),
-    )
-
-
 @router.get("/admin/hari-ini", response_class=HTMLResponse)
 async def today(request: Request):
     local_only(request)
@@ -217,20 +207,24 @@ async def save_manual(
     # Jika dropdown dipilih "Lainnya", gunakan nilai dari input teks kustom
     final_nama_pengantar = nama_pengantar_lainnya or None if nama_pengantar == "Lainnya" else (nama_pengantar or None)
     final_nama_penjemput = nama_penjemput_lainnya or None if nama_penjemput == "Lainnya" else (nama_penjemput or None)
-    reports.save_manual(
-        student_id=student_id,
-        tanggal=clean_tanggal,
-        status=status,
-        waktu=clean_waktu,
-        catatan=catatan,
-        waktu_pulang=clean_waktu_pulang or None,
-        status_pulang=status_pulang or None,
-        denda_menit=denda_menit,
-        nama_pengantar=final_nama_pengantar,
-        nama_penjemput=final_nama_penjemput,
-        alasan_tanpa_kartu=alasan_tanpa_kartu or None,
-        alasan_penjemputan_tanpa_kartu=alasan_penjemputan_tanpa_kartu or None,
-    )
+    try:
+        reports.save_manual(
+            student_id=student_id,
+            tanggal=clean_tanggal,
+            status=status,
+            waktu=clean_waktu,
+            catatan=catatan,
+            waktu_pulang=clean_waktu_pulang or None,
+            status_pulang=status_pulang or None,
+            denda_menit=denda_menit,
+            nama_pengantar=final_nama_pengantar,
+            nama_penjemput=final_nama_penjemput,
+            alasan_tanpa_kartu=alasan_tanpa_kartu or None,
+            alasan_penjemputan_tanpa_kartu=alasan_penjemputan_tanpa_kartu or None,
+        )
+    except ValueError as exc:
+        logging.getLogger("absensi_tpa").warning("Gagal menyimpan absensi manual: %s", exc)
+        return RedirectResponse("/admin/hari-ini", status_code=303)
     return RedirectResponse("/admin/hari-ini", status_code=303)
 
 
@@ -246,6 +240,7 @@ async def report_page(
     request: Request,
     mulai: str = "",
     sampai: str = "",
+    student_id: int | None = None,
     santri_id: int | None = None,
     status: str = "",
 ):
@@ -253,18 +248,19 @@ async def report_page(
     today = datetime.now().astimezone().date().isoformat()
     mulai = mulai or today
     sampai = sampai or today
+    active_student_id = student_id if student_id is not None else santri_id
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="admin/reports.html",
         context=context(
             request,
             title="Rekap & Laporan",
-            rows=reports.attendance_rows(mulai, sampai, santri_id, status or None),
-            summary=reports.summary(mulai, sampai, santri_id),
+            rows=reports.attendance_rows(mulai, sampai, active_student_id, status or None),
+            summary=reports.summary(mulai, sampai, active_student_id),
             students=students.list_students(),
             mulai=mulai,
             sampai=sampai,
-            selected_student=santri_id,
+            selected_student=active_student_id,
             selected_status=status,
         ),
     )
@@ -275,6 +271,7 @@ async def export_report(
     request: Request,
     mulai: str = "",
     sampai: str = "",
+    student_id: int | None = None,
     santri_id: int | None = None,
     status: str = "",
 ):
@@ -282,9 +279,10 @@ async def export_report(
     today = datetime.now().astimezone().date().isoformat()
     mulai = mulai or today
     sampai = sampai or today
+    active_student_id = student_id if student_id is not None else santri_id
     content = export_workbook(
-        reports.attendance_rows(mulai, sampai, santri_id, status or None),
-        reports.summary(mulai, sampai, santri_id),
+        reports.attendance_rows(mulai, sampai, active_student_id, status or None),
+        reports.summary(mulai, sampai, active_student_id),
         students.fields(active_only=True),
     )
     filename = f"absensi_TPA_{mulai}_sampai_{sampai}.xlsx"
@@ -301,7 +299,7 @@ async def import_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="admin/import.html",
-        context=context(request, title="Impor Data Santri", preview=None),
+        context=context(request, title="Impor Data Murid", preview=None),
     )
 
 
@@ -311,7 +309,7 @@ async def import_template(request: Request):
     return Response(
         content=student_template(students.fields(active_only=True)),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="template_santri.xlsx"'},
+        headers={"Content-Disposition": 'attachment; filename="template_murid.xlsx"'},
     )
 
 
@@ -362,27 +360,46 @@ async def confirm_import(request: Request, token: str = Form(...)):
         raise HTTPException(400, "Pratinjau impor sudah tidak berlaku atau kedaluwarsa.")
     for row in preview["rows"]:
         students.save_student(None, row["nama"], row["nomor_urut"], row["extra_data"])
-    return RedirectResponse("/admin/santri", status_code=303)
+    return RedirectResponse("/admin/murid", status_code=303)
+
+
+def student_redirect(request: Request) -> RedirectResponse:
+    dest = "/admin/murid" if request.url.path.startswith("/admin/murid") else "/admin/santri"
+    return RedirectResponse(dest, status_code=303)
 
 
 @router.get("/admin/santri", response_class=HTMLResponse)
-async def student_page(request: Request, q: str = ""):
+@router.get("/admin/murid", response_class=HTMLResponse)
+async def student_page(request: Request, q: str = "", page: int = 1):
     local_only(request)
+    per_page = 15
+    page = max(1, page)
+    students_list, total_students = students.list_students_paginated(q, page=page, per_page=per_page)
+    total_pages = max(1, (total_students + per_page - 1) // per_page)
+    if page > total_pages:
+        page = total_pages
+        students_list, total_students = students.list_students_paginated(q, page=page, per_page=per_page)
+
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="admin/students.html",
         context=context(
             request,
-            students=students.list_students(q),
+            students=students_list,
             fields=students.fields(active_only=True),
             all_fields=students.fields(),
             search=q,
             edit_student=None,
+            page=page,
+            total_pages=total_pages,
+            total_students=total_students,
+            per_page=per_page,
         ),
     )
 
 
 @router.post("/admin/santri")
+@router.post("/admin/murid")
 async def add_student(
     request: Request,
     nama: str = Form(...),
@@ -394,10 +411,11 @@ async def add_student(
     extra = {field["field_key"]: str(data.get(field["field_key"], "")) for field in students.fields(True)}
     number = int(nomor_urut) if nomor_urut.strip().isdigit() else None
     students.save_student(None, nama, number, extra, paket=paket)
-    return RedirectResponse("/admin/santri", status_code=303)
+    return student_redirect(request)
 
 
 @router.post("/admin/santri/{student_id}")
+@router.post("/admin/murid/{student_id}")
 async def edit_student(
     request: Request,
     student_id: int,
@@ -410,30 +428,33 @@ async def edit_student(
     extra = {field["field_key"]: str(data.get(field["field_key"], "")) for field in students.fields(True)}
     number = int(nomor_urut) if nomor_urut.strip().isdigit() else None
     students.save_student(student_id, nama, number, extra, paket=paket)
-    return RedirectResponse("/admin/santri", status_code=303)
+    return student_redirect(request)
 
 
 @router.post("/admin/santri/{student_id}/hapus")
+@router.post("/admin/murid/{student_id}/hapus")
 async def delete_student(request: Request, student_id: int):
     local_only(request)
     student = students.get_student(student_id)
     if not student:
         raise HTTPException(404, "Murid tidak ditemukan.")
     students.delete_student(student_id)
-    return RedirectResponse("/admin/santri", status_code=303)
+    return student_redirect(request)
 
 
 @router.post("/admin/santri/{student_id}/aktif")
+@router.post("/admin/murid/{student_id}/aktif")
 async def toggle_student(request: Request, student_id: int):
     local_only(request)
     student = students.get_student(student_id)
     if not student:
         raise HTTPException(404, "Murid tidak ditemukan.")
     students.set_active(student_id, not student["aktif"])
-    return RedirectResponse("/admin/santri", status_code=303)
+    return student_redirect(request)
 
 
 @router.post("/api/admin/santri/{student_id}/daftar-kartu")
+@router.post("/api/admin/murid/{student_id}/daftar-kartu")
 async def register_card(request: Request, student_id: int):
     local_only(request)
     payload = RegisterCardRequest.model_validate(await request.json())
@@ -446,6 +467,7 @@ async def register_card(request: Request, student_id: int):
 
 
 @router.post("/api/admin/santri/{student_id}/kartu/{slot}/hapus")
+@router.post("/api/admin/murid/{student_id}/kartu/{slot}/hapus")
 async def delete_card_endpoint(request: Request, student_id: int, slot: int):
     local_only(request)
     try:
@@ -561,6 +583,7 @@ async def simulator_page(request: Request, page: int = 1):
     if page > total_pages:
         page = total_pages
         students_page, total_students = scanner_simulator.get_students_page(page, per_page)
+    all_students = scanner_simulator.get_all_students()
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="admin/simulator.html",
@@ -569,6 +592,7 @@ async def simulator_page(request: Request, page: int = 1):
             title="Simulator RFID",
             simulator_enabled=scanner_simulator.is_simulation_enabled(),
             students=students_page,
+            all_students=all_students,
             page=page,
             total_pages=total_pages,
             total_students=total_students,

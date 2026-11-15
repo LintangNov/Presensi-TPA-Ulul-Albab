@@ -7,17 +7,17 @@
   </div>
 </div>
 
-<form method="get" action="/admin/santri" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
+<form method="get" action="/admin/murid" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
   <input name="q" value="{{ search }}" placeholder="Cari nama atau nomor urut murid..." style="max-width: 320px;">
   <button type="submit" class="btn-sm">Cari</button>
   {% if search %}
-  <a href="/admin/santri"><button type="button" class="btn-sm btn-secondary">Reset</button></a>
+  <a href="/admin/murid"><button type="button" class="btn-sm btn-secondary">Reset</button></a>
   {% endif %}
 </form>
 
-<details id="tambah-santri" style="margin-bottom: 1.5rem;" open>
+<details id="tambah-murid" style="margin-bottom: 1.5rem;" open>
   <summary style="cursor: pointer; font-weight: 700;">Tambah Murid Baru</summary>
-  <form method="post" action="/admin/santri" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+  <form method="post" action="/admin/murid" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
     <label>Nama Lengkap <input name="nama" placeholder="Contoh: Muhammad Andi" required></label>
     <label>Nomor Urut / Absen <input name="nomor_urut" type="number" placeholder="Contoh: 1"></label>
     <label>Paket Penitipan
@@ -108,7 +108,7 @@
             <summary class="btn-sm btn-secondary" style="list-style: none; cursor: pointer;">Edit</summary>
             <div style="position: absolute; right: 2rem; background: #fff; border: 1px solid #cbd5e0; border-radius: 10px; padding: 1.25rem; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 50; width: 320px;">
               <h4 style="margin: 0 0 1rem 0; font-size: 1rem;">Edit Murid: {{ student.nama }}</h4>
-              <form method="post" action="/admin/santri/{{ student.id }}" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <form method="post" action="/admin/murid/{{ student.id }}" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <label>Nama <input name="nama" value="{{ student.nama }}" required></label>
                 <label>Nomor Urut <input name="nomor_urut" type="number" value="{{ student.nomor_urut or '' }}"></label>
                 <label>Paket
@@ -127,7 +127,7 @@
             </div>
           </details>
 
-          <form method="post" action="/admin/santri/{{ student.id }}/aktif" style="margin: 0; display: inline;">
+          <form method="post" action="/admin/murid/{{ student.id }}/aktif" style="margin: 0; display: inline;">
             <button type="submit" class="btn-sm btn-secondary" title="{{ 'Nonaktifkan murid' if student.aktif else 'Aktifkan murid' }}">
               {{ "Nonaktifkan" if student.aktif else "Aktifkan" }}
             </button>
@@ -148,6 +148,38 @@
     {% endfor %}
   </tbody>
 </table>
+
+  <!-- Pagination Data Murid -->
+  {% if total_pages and total_pages > 1 %}
+  <nav class="pagination" aria-label="Navigasi halaman murid" style="margin-top: 1rem; margin-bottom: 1.5rem;">
+    <span class="pagination-info">
+      Menampilkan {{ ((page - 1) * per_page) + 1 }}–{{ [page * per_page, total_students] | min }} dari {{ total_students }} murid
+    </span>
+    <div class="pagination-links">
+      {% if page > 1 %}
+      <a class="pagination-btn" href="/admin/murid?page={{ page - 1 }}{% if search %}&q={{ search }}{% endif %}" title="Halaman sebelumnya">&laquo; Sebelumnya</a>
+      {% else %}
+      <span class="pagination-btn disabled">&laquo; Sebelumnya</span>
+      {% endif %}
+
+      {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+        <span class="pagination-btn active" aria-current="page">{{ p }}</span>
+        {% elif p == 1 or p == total_pages or (p >= (page - 1) and p <= (page + 1)) %}
+        <a class="pagination-btn" href="/admin/murid?page={{ p }}{% if search %}&q={{ search }}{% endif %}">{{ p }}</a>
+        {% elif p == (page - 2) or p == (page + 2) %}
+        <span class="pagination-ellipsis">&hellip;</span>
+        {% endif %}
+      {% endfor %}
+
+      {% if page < total_pages %}
+      <a class="pagination-btn" href="/admin/murid?page={{ page + 1 }}{% if search %}&q={{ search }}{% endif %}" title="Halaman berikutnya">Berikutnya &raquo;</a>
+      {% else %}
+      <span class="pagination-btn disabled">Berikutnya &raquo;</span>
+      {% endif %}
+    </div>
+  </nav>
+  {% endif %}
 {% else %}
 <p class="empty-table-notice">Data murid belum ada. Tambahkan murid baru di atas untuk mulai mendaftarkan kartu RFID.</p>
 {% endif %}
@@ -346,7 +378,7 @@
     e.stopPropagation();
     if (!confirm("Hapus Kartu 1 untuk murid ini?")) return;
     try {
-      const res = await fetch(`/api/admin/santri/${registerStudentId}/kartu/1/hapus`, { method: "POST" });
+      const res = await fetch(`/api/admin/murid/${registerStudentId}/kartu/1/hapus`, { method: "POST" });
       if (!res.ok) throw new Error("Gagal menghapus Kartu 1");
       currentCard1Uid = "";
       updateSlotView();
@@ -367,7 +399,7 @@
     e.stopPropagation();
     if (!confirm("Hapus Kartu 2 untuk murid ini?")) return;
     try {
-      const res = await fetch(`/api/admin/santri/${registerStudentId}/kartu/2/hapus`, { method: "POST" });
+      const res = await fetch(`/api/admin/murid/${registerStudentId}/kartu/2/hapus`, { method: "POST" });
       if (!res.ok) throw new Error("Gagal menghapus Kartu 2");
       currentCard2Uid = "";
       updateSlotView();
@@ -394,7 +426,7 @@
 
     registerMessage.textContent = `Memproses pendaftaran Kartu ${slot}...`;
     try {
-      const response = await fetch(`/api/admin/santri/${registerStudentId}/daftar-kartu`, {
+      const response = await fetch(`/api/admin/murid/${registerStudentId}/daftar-kartu`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ uid, slot }),
@@ -437,7 +469,7 @@
       const id = button.dataset.deleteStudent;
       const name = button.dataset.deleteName;
       deleteNameText.textContent = name;
-      deleteForm.action = `/admin/santri/${id}/hapus`;
+      deleteForm.action = `/admin/murid/${id}/hapus`;
       deleteDialog.showModal();
     });
   });

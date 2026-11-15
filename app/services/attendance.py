@@ -30,9 +30,17 @@ def now_local() -> datetime:
     return datetime.now().astimezone()
 
 
-def parse_time_minutes(time_str: str) -> int:
-    parts = time_str.split(":")
-    return int(parts[0]) * 60 + int(parts[1])
+def parse_time_minutes(time_str: str | None) -> int:
+    if not time_str or not isinstance(time_str, str):
+        return 0
+    clean = time_str.strip().replace(".", ":")
+    parts = clean.split(":")
+    if len(parts) >= 2:
+        try:
+            return int(parts[0]) * 60 + int(parts[1])
+        except (ValueError, TypeError):
+            return 0
+    return 0
 
 
 class AttendanceService:
@@ -48,24 +56,15 @@ class AttendanceService:
         number: int | None = None,
         paket: str = "A",
     ) -> int:
-        normalized = normalize_uid(uid) if uid else None
-        paket_val = paket.strip().upper() if paket and paket.strip().upper() in {"A", "B"} else "A"
-        nomor_kartu = str(number) if number is not None else ""
-        now_str = now_local().isoformat(timespec="seconds")
-        with connect(self.db_path) as connection:
-            cursor = connection.execute(
-                "INSERT INTO santri "
-                "(nomor_urut, rfid_uid, nama, paket, aktif, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (number, normalized, name, paket_val, int(active), now_str),
-            )
-            sid = int(cursor.lastrowid)
-            if normalized:
-                connection.execute(
-                    "INSERT INTO kartu_santri (santri_id, rfid_uid, nomor_kartu_custom, slot, label, created_at) "
-                    "VALUES (?, ?, ?, 1, 'Kartu 1', ?)",
-                    (sid, normalized, nomor_kartu, now_str),
-                )
-            return sid
+        from app.services.students import StudentService
+
+        student_service = StudentService(self.db_path)
+        sid = student_service.save_student(None, name, number, {}, paket=paket)
+        if not active:
+            student_service.set_active(sid, False)
+        if uid:
+            student_service.register_card(sid, uid, slot=1)
+        return sid
 
     def set_registration(self, student_id: int, minutes: int = 2) -> None:
         expires = now_local() + timedelta(minutes=minutes)

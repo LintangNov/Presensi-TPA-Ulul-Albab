@@ -45,7 +45,7 @@
     <label>Murid
       <select name="student_id" id="sim-student-select" required>
         <option value="">-- Pilih Murid --</option>
-        {% for student in students %}
+        {% for student in (all_students if all_students is defined and all_students else students) %}
         <option value="{{ student.id }}" data-nama="{{ student.nama }}" data-uid="{{ student.rfid_uid or '' }}">
           {{ student.nama }}{% if student.nomor_urut %} (No. {{ student.nomor_urut }}){% endif %}
         </option>

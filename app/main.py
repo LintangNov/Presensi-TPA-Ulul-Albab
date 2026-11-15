@@ -69,15 +69,6 @@ def client_address(request: Request) -> str:
     return request.client.host if request.client else ""
 
 
-def require_local_admin(request: Request) -> None:
-    if client_address(request) not in {"127.0.0.1", "::1"}:
-        raise HTTPException(
-            status_code=403,
-            detail="Halaman ini hanya bisa dibuka dari pc admin.",
-        )
-    verify_csrf(request)
-
-
 @app.get("/scan", response_class=HTMLResponse)
 async def scan_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
