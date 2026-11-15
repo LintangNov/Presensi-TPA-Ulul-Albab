@@ -6,33 +6,32 @@
   </div>
   <div>
     <a href="/scan" target="_blank" rel="noopener">
-      <button type="button" class="btn-sm" style="background: #007bff; color: #fff; border-color: #2b6cb0;">
+      <button type="button" class="btn-sm">
         Buka Display Scanner
       </button>
     </a>
   </div>
 </div>
 
-<!-- Kartu Kontrol Scanner USB (Dinamis & Real-time) -->
 <section class="dashboard-scanner-card">
   <div class="scanner-ctrl-header">
     <div class="scanner-ctrl-left">
       <div style="display: flex; flex-direction: column; gap: 0.25rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <h3 style="margin: 0; font-size: 1.15rem; color: #2d3748;">Status Scanner USB</h3>
+          <h3 style="margin: 0; font-size: 1.15rem;">Status Scanner USB</h3>
           <span id="scanner-hardware-status" class="hw-badge {% if scanner_hardware.connected %}connected{% else %}disconnected{% endif %}">
             {{ scanner_hardware.details }}
           </span>
         </div>
-        <p style="margin: 0; font-size: 0.85rem; color: #718096;">
+        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
           Scanner USB standby menangkap kartu di latar belakang halaman ini. Tab scanner hanya bertindak sebagai penampil absensi.
         </p>
       </div>
     </div>
     <div class="scanner-ctrl-right scanner-toggle-box" id="scanner-toggle-container" style="cursor: pointer;">
       <div style="text-align: right;">
-        <span style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #718096; font-weight: 700;">Scanner</span>
-        <span id="dashboard-scanner-status" class="scanner-operational-status" style="font-size: 0.95rem; font-weight: 700; color: #2d3748;">Memuat…</span>
+        <span style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Scanner</span>
+        <span id="dashboard-scanner-status" class="scanner-operational-status" style="font-size: 0.95rem; font-weight: 700;">Memuat…</span>
       </div>
       <label class="switch-toggle" title="Aktifkan / Matikan Scanner Manual">
         <input type="checkbox" id="scanner-toggle" checked>
@@ -41,7 +40,7 @@
     </div>
   </div>
 
-  <div style="background: rgba(237, 242, 247, 0.6); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #4a5568; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+  <div style="background: var(--bg); border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
     <span>Pastikan tab ini tetap terbuka di pc admin agar scanner selalu siap memproses tap kartu murid.</span>
     <span>Jam Operasional: <strong>Masuk 06:30</strong> | <strong>Paket Half Day 06.30 - 13:00</strong> | <strong>Paket Full Day 06.30 - 16:00</strong></span>
   </div>
@@ -54,7 +53,7 @@
     <span>Hadir Masuk</span>
   </article>
   <article>
-    <strong style="color: #2b6cb0;">{{ picked_up_count }}</strong>
+    <strong style="color: var(--primary);">{{ picked_up_count }}</strong>
     <span>Sudah Dijemput</span>
   </article>
   <article>
@@ -67,14 +66,13 @@
   </article>
 </section>
 
-<!-- Riwayat Tap Terkini di Dashboard -->
 <section class="settings-card" style="margin-top: 1rem;">
   <div class="settings-card-title">
     <span>Aktivitas Tap Kartu Terkini</span>
-    <span style="font-size: 0.85rem; font-weight: normal; color: #718096;">Otomatis sinkron dengan TV LED</span>
+    <span style="font-size: 0.85rem; font-weight: normal; color: var(--text-muted);">Otomatis sinkron dengan TV LED</span>
   </div>
   <ul id="recent-tap-feed" class="feed-list">
-    <li class="feed-item" style="color: #718096; justify-content: center; font-style: italic;">
+    <li class="feed-item" style="color: var(--text-muted); justify-content: center; font-style: italic;">
       Menunggu tap kartu RFID... Tempelkan kartu pada reader USB.
     </li>
   </ul>

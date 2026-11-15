@@ -23,6 +23,8 @@ import_previews: dict[str, dict[str, Any]] = {}
 
 class RegisterCardRequest(BaseModel):
     uid: str
+    slot: int = 1
+    label: str | None = None
 
 
 def local_only(request: Request) -> None:
@@ -43,7 +45,7 @@ def today_data() -> dict[str, Any]:
         rows = connection.execute(
             "SELECT s.id, s.nomor_urut, s.nama, s.paket, s.aktif, a.id AS absensi_id, a.tanggal, "
             "a.waktu, a.waktu_pulang, a.status_pulang, a.denda_menit, a.status, a.sumber, a.catatan, "
-            "a.nama_pengantar, a.nama_penjemput, a.alasan_tanpa_kartu "
+            "a.nama_pengantar, a.nama_penjemput, a.alasan_tanpa_kartu, a.alasan_penjemputan_tanpa_kartu "
             "FROM santri s LEFT JOIN absensi a ON a.santri_id = s.id AND a.tanggal = ? "
             "ORDER BY s.nomor_urut, s.nama",
             (today,),
@@ -119,6 +121,7 @@ async def save_manual(
     nama_pengantar_lainnya: str = Form(""),
     nama_penjemput_lainnya: str = Form(""),
     alasan_tanpa_kartu: str = Form(""),
+    alasan_penjemputan_tanpa_kartu: str = Form(""),
 ):
     local_only(request)
     # Normalisasi format tanggal DD/MM/YYYY ke YYYY-MM-DD jika diperlukan
@@ -147,6 +150,7 @@ async def save_manual(
         nama_pengantar=final_nama_pengantar,
         nama_penjemput=final_nama_penjemput,
         alasan_tanpa_kartu=alasan_tanpa_kartu or None,
+        alasan_penjemputan_tanpa_kartu=alasan_penjemputan_tanpa_kartu or None,
     )
     return RedirectResponse("/admin/hari-ini", status_code=303)
 
@@ -354,11 +358,21 @@ async def register_card(request: Request, student_id: int):
     local_only(request)
     payload = RegisterCardRequest.model_validate(await request.json())
     try:
-        return students.register_card(student_id, payload.uid)
+        return students.register_card(student_id, payload.uid, slot=payload.slot, label=payload.label)
     except LookupError as exc:
         raise HTTPException(404, str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
+
+
+@router.post("/api/admin/santri/{student_id}/kartu/{slot}/hapus")
+async def delete_card_endpoint(request: Request, student_id: int, slot: int):
+    local_only(request)
+    try:
+        students.delete_card(student_id, slot)
+        return {"ok": True}
+    except Exception as exc:
+        raise HTTPException(500, str(exc)) from exc
 
 
 @router.get("/admin/fields", response_class=HTMLResponse)
@@ -508,6 +522,7 @@ async def scanner_simulator_tap(request: Request):
 class SimulatorRegisterCardRequest(BaseModel):
     student_id: int
     uid: str
+    slot: int = 1
 
 
 @router.post("/api/admin/scanner-simulator/register-card")
@@ -517,7 +532,7 @@ async def scanner_simulator_register_card(request: Request):
         raise HTTPException(400, "Simulasi tidak tersedia. Jalankan dari source code tanpa card reader fisik.")
     payload = SimulatorRegisterCardRequest.model_validate(await request.json())
     try:
-        return scanner_simulator.register_simulator_card(payload.student_id, payload.uid)
+        return scanner_simulator.register_simulator_card(payload.student_id, payload.uid, slot=payload.slot)
     except LookupError as exc:
         raise HTTPException(404, str(exc)) from exc
     except ValueError as exc:

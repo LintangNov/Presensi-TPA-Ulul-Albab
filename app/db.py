@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from typing import Iterator
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 class ManagedConnection(sqlite3.Connection):
@@ -54,6 +54,15 @@ def initialize(db_path: Path) -> None:
                     aktif INTEGER NOT NULL DEFAULT 1,
                     created_at TEXT
                 );
+                CREATE TABLE kartu_santri (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    santri_id INTEGER NOT NULL REFERENCES santri(id) ON DELETE CASCADE,
+                    rfid_uid TEXT UNIQUE NOT NULL,
+                    nomor_kartu_custom TEXT,
+                    slot INTEGER NOT NULL DEFAULT 1,
+                    label TEXT NOT NULL DEFAULT 'Kartu 1',
+                    created_at TEXT
+                );
                 CREATE TABLE absensi (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     santri_id INTEGER NOT NULL REFERENCES santri(id),
@@ -68,6 +77,7 @@ def initialize(db_path: Path) -> None:
                     nama_pengantar TEXT,
                     nama_penjemput TEXT,
                     alasan_tanpa_kartu TEXT,
+                    alasan_penjemputan_tanpa_kartu TEXT,
                     UNIQUE(santri_id, tanggal)
                 );
                 CREATE TABLE tap_log (
@@ -84,7 +94,7 @@ def initialize(db_path: Path) -> None:
                     key TEXT PRIMARY KEY,
                     value TEXT
                 );
-                INSERT INTO schema_version (version) VALUES (4);
+                INSERT INTO schema_version (version) VALUES (5);
                 """
             )
         else:
@@ -92,6 +102,31 @@ def initialize(db_path: Path) -> None:
             santri_cols = {row["name"] for row in connection.execute("PRAGMA table_info(santri)").fetchall()}
             if "paket" not in santri_cols:
                 connection.execute("ALTER TABLE santri ADD COLUMN paket TEXT NOT NULL DEFAULT 'A'")
+
+            # Tabel kartu_santri
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS kartu_santri (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    santri_id INTEGER NOT NULL REFERENCES santri(id) ON DELETE CASCADE,
+                    rfid_uid TEXT UNIQUE NOT NULL,
+                    nomor_kartu_custom TEXT,
+                    slot INTEGER NOT NULL DEFAULT 1,
+                    label TEXT NOT NULL DEFAULT 'Kartu 1',
+                    created_at TEXT
+                )
+                """
+            )
+
+            # Migrasikan rfid_uid yang ada di santri ke kartu_santri jika belum ada
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO kartu_santri (santri_id, rfid_uid, nomor_kartu_custom, slot, label, created_at)
+                SELECT id, rfid_uid, COALESCE(CAST(nomor_urut AS TEXT), ''), 1, 'Kartu 1', COALESCE(created_at, datetime('now'))
+                FROM santri
+                WHERE rfid_uid IS NOT NULL AND trim(rfid_uid) != ''
+                """
+            )
 
             absensi_cols = {row["name"] for row in connection.execute("PRAGMA table_info(absensi)").fetchall()}
             if "waktu_pulang" not in absensi_cols:
@@ -106,6 +141,8 @@ def initialize(db_path: Path) -> None:
                 connection.execute("ALTER TABLE absensi ADD COLUMN nama_penjemput TEXT")
             if "alasan_tanpa_kartu" not in absensi_cols:
                 connection.execute("ALTER TABLE absensi ADD COLUMN alasan_tanpa_kartu TEXT")
+            if "alasan_penjemputan_tanpa_kartu" not in absensi_cols:
+                connection.execute("ALTER TABLE absensi ADD COLUMN alasan_penjemputan_tanpa_kartu TEXT")
 
             if current["version"] < SCHEMA_VERSION:
                 connection.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
@@ -118,10 +155,11 @@ def reset_all_data(db_path: Path) -> None:
         connection.execute("BEGIN IMMEDIATE")
         connection.execute("DELETE FROM tap_log")
         connection.execute("DELETE FROM absensi")
+        connection.execute("DELETE FROM kartu_santri")
         connection.execute("DELETE FROM santri")
         connection.execute("DELETE FROM custom_fields")
         connection.execute("DELETE FROM pengaturan")
-        connection.execute("DELETE FROM sqlite_sequence WHERE name IN ('santri', 'absensi', 'tap_log', 'custom_fields')")
+        connection.execute("DELETE FROM sqlite_sequence WHERE name IN ('santri', 'kartu_santri', 'absensi', 'tap_log', 'custom_fields')")
         connection.commit()
 
 

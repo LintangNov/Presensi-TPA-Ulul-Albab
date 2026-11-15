@@ -12,6 +12,33 @@
   </div>
   {% endif %}
 
+  {% if saved_sukses %}
+  <div style="background: #c6f6d5; border: 1px solid #38a169; color: #22543d; border-radius: 12px; padding: 1rem 1.25rem; font-weight: 600;">
+    Pengaturan presensi berhasil disimpan.
+  </div>
+  {% endif %}
+
+  <!-- Kategori 0: Aturan Presensi & Tap Kartu -->
+  <div class="settings-card">
+    <div class="settings-card-title">
+      <span>Aturan Presensi & Tap Kartu</span>
+    </div>
+    <div class="settings-card-subtitle">
+      Cegah tap ganda saat pagi hari. Tap keluar hanya dapat dilakukan setelah jeda minimal dari tap masuk ATAU ketika jam kepulangan paket murid telah tiba (Paket A Half Day: 13.00 WIB, Paket B Full Day: 16.00 WIB).
+    </div>
+
+    <form method="post" action="/admin/settings/presensi" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; background: #f7fafc; padding: 1rem; border-radius: 10px; border: 1px solid #edf2f7;">
+      <label style="flex: 1; min-width: 220px; margin: 0;">
+        Jeda Minimal Tap Keluar (Menit)
+        <input name="jeda_tap_pulang_menit" type="number" min="1" max="720" value="{{ jeda_tap_pulang }}" required style="margin-top: 0.25rem;">
+      </label>
+      <div style="font-size: 0.85rem; color: #718096; flex: 2; min-width: 260px; line-height: 1.4;">
+        💡 <em>Contoh: Jika disetel 60 menit, murid yang tap masuk pukul 07.15 tidak sengaja tap lagi sebelum pukul 08.15 akan ditolak sebagai tap duplikat (tidak dianggap pulang). Namun mulai pukul 13.00 (Paket A) atau 16.00 (Paket B), tap keluar otomatis diizinkan.</em>
+      </div>
+      <button type="submit" class="btn-sm" style="margin: 0; min-height: 44px !important; height: 44px !important;">Simpan Setelan</button>
+    </form>
+  </div>
+
   <!-- Kategori 1: Kolom Tambahan Data Murid -->
   <div class="settings-card">
     <div class="settings-card-title">

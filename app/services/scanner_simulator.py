@@ -63,9 +63,9 @@ def simulate_tap(uid: str) -> dict[str, Any]:
     return attendance.tap(uid, client_id="simulator", client_tap_id=None)
 
 
-def register_simulator_card(student_id: int, uid: str) -> dict[str, Any]:
+def register_simulator_card(student_id: int, uid: str, slot: int = 1) -> dict[str, Any]:
     """Daftarkan kartu simulasi ke murid."""
-    return students.register_card(student_id, uid)
+    return students.register_card(student_id, uid, slot=slot)
 
 
 def get_all_students() -> list[dict[str, Any]]:

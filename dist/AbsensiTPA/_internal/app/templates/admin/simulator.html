@@ -41,7 +41,7 @@
   <div class="settings-card-subtitle">
     Pasangkan UID simulasi ke murid. Setelah kartu terpasang, gunakan tombol "Simulasikan Tap" untuk menguji absensi.
   </div>
-  <form id="register-simulator-card-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: end;">
+  <form id="register-simulator-card-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
     <label>Murid
       <select name="student_id" id="sim-student-select" required>
         <option value="">-- Pilih Murid --</option>
@@ -50,6 +50,12 @@
           {{ student.nama }}{% if student.nomor_urut %} (No. {{ student.nomor_urut }}){% endif %}
         </option>
         {% endfor %}
+      </select>
+    </label>
+    <label>Slot Kartu
+      <select name="slot" id="sim-slot-select">
+        <option value="1">Kartu 1</option>
+        <option value="2">Kartu 2</option>
       </select>
     </label>
     <label>UID Kartu
@@ -94,10 +100,15 @@
           <td>{{ student.nama }}</td>
           <td>{{ "Paket A (Half Day)" if student.paket == "A" else "Paket B (Full Day)" }}</td>
           <td>
-            {% if student.rfid_uid %}
-            <code style="font-weight: 600; color: #2b6cb0;">{{ student.rfid_uid }}</code>
+            {% if student.card_1 or student.card_2 %}
+              <div style="display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem;">
+                {% if student.card_1 %}<div><span style="color: #718096; font-size: 0.75rem;">K1:</span> <code style="font-weight: 600; color: #2b6cb0;">{{ student.card_1.rfid_uid }}</code></div>{% endif %}
+                {% if student.card_2 %}<div><span style="color: #718096; font-size: 0.75rem;">K2:</span> <code style="font-weight: 600; color: #2b6cb0;">{{ student.card_2.rfid_uid }}</code></div>{% endif %}
+              </div>
+            {% elif student.rfid_uid %}
+              <code style="font-weight: 600; color: #2b6cb0;">{{ student.rfid_uid }}</code>
             {% else %}
-            <span style="color: #a0aec0; font-size: 0.85rem; font-style: italic;">Belum dipasangkan</span>
+              <span style="color: #a0aec0; font-size: 0.85rem; font-style: italic;">Belum dipasangkan</span>
             {% endif %}
           </td>
           <td>
@@ -107,6 +118,31 @@
           </td>
           <td>
             <div class="btn-group">
+              {% if student.card_1 %}
+              <button
+                type="button"
+                class="btn-sm"
+                data-sim-tap-uid="{{ student.card_1.rfid_uid }}"
+                data-sim-tap-nama="{{ student.nama }} (K1)"
+                data-sim-tap-label="Tap K1"
+                title="Simulasikan tap Kartu 1"
+              >
+                Tap K1
+              </button>
+              {% endif %}
+              {% if student.card_2 %}
+              <button
+                type="button"
+                class="btn-sm"
+                data-sim-tap-uid="{{ student.card_2.rfid_uid }}"
+                data-sim-tap-nama="{{ student.nama }} (K2)"
+                data-sim-tap-label="Tap K2"
+                title="Simulasikan tap Kartu 2"
+              >
+                Tap K2
+              </button>
+              {% endif %}
+              {% if not student.card_1 and not student.card_2 %}
               <button
                 type="button"
                 class="btn-sm"
@@ -118,6 +154,7 @@
               >
                 Simulasikan Tap
               </button>
+              {% endif %}
               <button
                 type="button"
                 class="btn-sm btn-secondary"
@@ -279,6 +316,7 @@
     const formData = new FormData(e.target);
     const studentId = formData.get("student_id");
     const uid = formData.get("uid");
+    const slot = parseInt(formData.get("slot") || "1", 10);
     if (!studentId || !uid) return;
 
     const messageEl = document.getElementById("simulator-register-message");
@@ -286,7 +324,7 @@
       const res = await fetch("/api/admin/scanner-simulator/register-card", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ student_id: parseInt(studentId), uid }),
+        body: JSON.stringify({ student_id: parseInt(studentId), uid, slot }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.detail || "Gagal mendaftarkan kartu.");

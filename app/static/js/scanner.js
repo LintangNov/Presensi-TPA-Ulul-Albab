@@ -58,7 +58,9 @@
     badgeEl.textContent = badgeLabel;
 
     nameEl.textContent = result.nama || `Kartu: ${uid || "-"}`;
-    noEl.textContent = result.nomor_urut ? `No. Absen: #${result.nomor_urut}` : "No. Absen: -";
+    const noText = result.nomor_urut ? `No. Absen: #${result.nomor_urut}` : "No. Absen: -";
+    const cardInfo = result.card_label ? ` • ${result.card_label}` : "";
+    noEl.textContent = `${noText}${cardInfo}`;
     paketEl.textContent = result.paket_label || (result.paket ? `Paket ${result.paket}` : "Paket TPA");
     timeEl.textContent = `Pukul: ${result.waktu || new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`;
     msgEl.textContent = result.pesan || "";

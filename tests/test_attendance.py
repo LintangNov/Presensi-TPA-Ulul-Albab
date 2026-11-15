@@ -96,7 +96,7 @@ def test_database_pragmas_and_schema_version(service):
         assert connection.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
         assert connection.execute("PRAGMA foreign_keys").fetchone()[0] == 1
         assert connection.execute("PRAGMA busy_timeout").fetchone()[0] == 5000
-        assert connection.execute("SELECT version FROM schema_version").fetchone()[0] == 4
+        assert connection.execute("SELECT version FROM schema_version").fetchone()[0] == 5
 
 
 def test_tap_cooldown_and_packet_exit_time(service):
@@ -180,4 +180,93 @@ def test_tpa_paket_b_pickup_ontime_and_late_fee(service):
 
     assert res_late["hasil"] == "denda"
     assert res_late["denda_menit"] == 20
+
+
+def test_two_cards_per_student_same_custom_card_number(service):
+    from app.services.students import StudentService
+    students = StudentService(service.db_path)
+    # Tambah murid dengan nomor urut / absen 12
+    student_id = students.save_student(None, "Fatimah", 12, {}, paket="A")
+
+    # Daftarkan Kartu 1 dan Kartu 2
+    c1 = students.register_card(student_id, "UID-CARD-1", slot=1)
+    c2 = students.register_card(student_id, "UID-CARD-2", slot=2)
+
+    assert c1["nomor_kartu_custom"] == "12"
+    assert c2["nomor_kartu_custom"] == "12"
+    assert c1["uid"] == "UID-CARD-1"
+    assert c2["uid"] == "UID-CARD-2"
+
+    # Tap datang menggunakan Kartu 1
+    t_masuk = datetime.fromisoformat("2026-10-08T07:15:00+07:00")
+    res_in = service.tap("UID-CARD-1", "reader-pc", "tap-in-1", current_time=t_masuk)
+    assert res_in["hasil"] == "berhasil"
+    assert res_in["nama"] == "Fatimah"
+    assert res_in["nomor_kartu_custom"] == "12"
+    assert res_in["card_label"] == "Kartu 1"
+
+    # Tap pulang menggunakan Kartu 2
+    t_pulang = datetime.fromisoformat("2026-10-08T13:05:00+07:00")
+    res_out = service.tap("UID-CARD-2", "reader-pc", "tap-out-2", current_time=t_pulang)
+    assert res_out["hasil"] == "pulang"
+    assert res_out["nama"] == "Fatimah"
+    assert res_out["nomor_kartu_custom"] == "12"
+    assert res_out["card_label"] == "Kartu 2"
+
+
+def test_update_student_number_syncs_custom_card_number(service):
+    from app.services.students import StudentService
+    students = StudentService(service.db_path)
+    student_id = students.save_student(None, "Hasan", 5, {}, paket="B")
+    students.register_card(student_id, "HASAN-1", slot=1)
+    students.register_card(student_id, "HASAN-2", slot=2)
+
+    cards = students.get_cards(student_id)
+    assert all(c["nomor_kartu_custom"] == "5" for c in cards)
+
+    # Ubah nomor absen Hasan dari 5 menjadi 9
+    students.save_student(student_id, "Hasan", 9, {}, paket="B")
+    updated_cards = students.get_cards(student_id)
+    assert all(c["nomor_kartu_custom"] == "9" for c in updated_cards)
+
+
+def test_delete_card_slot(service):
+    from app.services.students import StudentService
+    students = StudentService(service.db_path)
+    student_id = students.save_student(None, "Ibrahim", 7, {})
+    students.register_card(student_id, "IBRA-1", slot=1)
+    students.register_card(student_id, "IBRA-2", slot=2)
+
+    assert len(students.get_cards(student_id)) == 2
+    students.delete_card(student_id, slot=2)
+    cards = students.get_cards(student_id)
+    assert len(cards) == 1
+    assert cards[0]["slot"] == 1
+
+
+def test_alasan_penjemputan_tanpa_kartu(service):
+    from app.services.reports import ReportService
+    from app.services.students import StudentService
+    reports = ReportService(service.db_path)
+    students = StudentService(service.db_path)
+    student_id = students.save_student(None, "Maryam", 3, {})
+
+    reports.save_manual(
+        student_id=student_id,
+        tanggal="2026-11-07",
+        status="Hadir",
+        waktu="07:30",
+        catatan="Datang tepat waktu",
+        waktu_pulang="13:00",
+        status_pulang="Tepat Waktu",
+        nama_pengantar="Ayah",
+        nama_penjemput="Ibu",
+        alasan_tanpa_kartu="Kartu santri tertinggal",
+        alasan_penjemputan_tanpa_kartu="Kartu penjemput rusak",
+    )
+
+    rows = reports.attendance_rows("2026-11-07", "2026-11-07", student_id=student_id)
+    assert len(rows) == 1
+    assert rows[0]["alasan_tanpa_kartu"] == "Kartu santri tertinggal"
+    assert rows[0]["alasan_penjemputan_tanpa_kartu"] == "Kartu penjemput rusak"
 
