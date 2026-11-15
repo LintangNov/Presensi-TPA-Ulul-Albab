@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import logging
+import secrets
+import time
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -18,7 +21,82 @@ from app.services import scanner_simulator
 students = StudentService(DB_PATH)
 reports = ReportService(DB_PATH)
 router = APIRouter()
+
+IMPORT_PREVIEW_TTL_SECONDS = 600  # Pratinjau impor kedaluwarsa setelah 10 menit
+MAX_IMPORT_PREVIEWS = 20  # Batas maksimal pratinjau di memori untuk mencegah DoS
 import_previews: dict[str, dict[str, Any]] = {}
+
+ALLOWED_ORIGIN_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
+
+
+def verify_csrf(request: Request) -> None:
+    """Periksa apakah request mutasi (POST, PUT, DELETE) bukan berasal dari serangan CSRF cross-site."""
+    if request.method in {"GET", "HEAD", "OPTIONS"}:
+        return
+
+    # 1. Standar Fetch Metadata W3C (Sec-Fetch-Site)
+    sec_fetch_site = request.headers.get("sec-fetch-site", "").lower()
+    if sec_fetch_site == "cross-site":
+        raise HTTPException(
+            status_code=403,
+            detail="Akses ditolak: Permintaan lintas-asal (cross-site) tidak diizinkan.",
+        )
+
+    # 2. Validasi Header Origin jika ada (selalu dikirim oleh browser pada POST/Fetch)
+    origin = request.headers.get("origin")
+    if origin:
+        try:
+            parsed = urlparse(origin)
+            if parsed.hostname not in ALLOWED_ORIGIN_HOSTS:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Akses ditolak: Origin tidak diizinkan.",
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(
+                status_code=403,
+                detail="Akses ditolak: Header Origin tidak valid.",
+            )
+    else:
+        # 3. Validasi Header Referer jika Origin tidak dikirim browser
+        referer = request.headers.get("referer")
+        if referer:
+            try:
+                parsed = urlparse(referer)
+                if parsed.hostname not in ALLOWED_ORIGIN_HOSTS:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Akses ditolak: Referer tidak diizinkan.",
+                    )
+            except HTTPException:
+                raise
+            except Exception:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Akses ditolak: Header Referer tidak valid.",
+                )
+
+
+def cleanup_import_previews() -> None:
+    """Bersihkan entri pratinjau impor yang kedaluwarsa atau melebihi batas kapasitas memori."""
+    now = time.time()
+    expired_keys = [
+        key
+        for key, val in list(import_previews.items())
+        if now - val.get("_created_at", 0) > IMPORT_PREVIEW_TTL_SECONDS
+    ]
+    for key in expired_keys:
+        import_previews.pop(key, None)
+
+    if len(import_previews) >= MAX_IMPORT_PREVIEWS:
+        sorted_keys = sorted(
+            import_previews.keys(),
+            key=lambda k: import_previews[k].get("_created_at", 0),
+        )
+        for key in sorted_keys[: len(import_previews) - MAX_IMPORT_PREVIEWS + 1]:
+            import_previews.pop(key, None)
 
 
 class RegisterCardRequest(BaseModel):
@@ -31,6 +109,7 @@ def local_only(request: Request) -> None:
     host = request.client.host if request.client else ""
     if host not in {"127.0.0.1", "::1"}:
         raise HTTPException(403, "Halaman ini hanya bisa dibuka dari pc admin.")
+    verify_csrf(request)
 
 
 def context(request: Request, **values: Any) -> dict[str, Any]:
@@ -263,8 +342,8 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
         if row["nama"].casefold() not in existing
         and (row["nomor_urut"] is None or row["nomor_urut"] not in existing_numbers)
     ]
-    import secrets
-
+    cleanup_import_previews()
+    preview["_created_at"] = time.time()
     token = secrets.token_urlsafe(16)
     import_previews[token] = preview
     return request.app.state.templates.TemplateResponse(
@@ -277,9 +356,10 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
 @router.post("/admin/import/konfirmasi")
 async def confirm_import(request: Request, token: str = Form(...)):
     local_only(request)
+    cleanup_import_previews()
     preview = import_previews.pop(token, None)
     if not preview:
-        raise HTTPException(400, "Pratinjau impor sudah tidak berlaku.")
+        raise HTTPException(400, "Pratinjau impor sudah tidak berlaku atau kedaluwarsa.")
     for row in preview["rows"]:
         students.save_student(None, row["nama"], row["nomor_urut"], row["extra_data"])
     return RedirectResponse("/admin/santri", status_code=303)

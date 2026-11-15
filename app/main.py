@@ -9,11 +9,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.services.attendance import AttendanceService
 from app.services import scanner_simulator
-from app.routers.admin import router as admin_router
+from app.routers.admin import router as admin_router, verify_csrf
 from app.runtime import (
     DB_PATH,
     RESOURCE_DIR,
@@ -58,7 +58,7 @@ class TapRequest(BaseModel):
     uid: str
     client_id: str | None = None
     client_tap_id: str | None = None
-    age_ms: int = 0
+    age_ms: int = Field(default=0, ge=0, le=120_000)
 
 
 def local_time() -> str:
@@ -75,6 +75,7 @@ def require_local_admin(request: Request) -> None:
             status_code=403,
             detail="Halaman ini hanya bisa dibuka dari pc admin.",
         )
+    verify_csrf(request)
 
 
 @app.get("/scan", response_class=HTMLResponse)
@@ -93,6 +94,7 @@ async def ping() -> dict[str, Any]:
 
 @app.post("/api/tap")
 async def tap(payload: TapRequest, request: Request) -> JSONResponse:
+    verify_csrf(request)
     result = attendance.tap(
         payload.uid,
         payload.client_id or request.headers.get("X-Client-ID"),

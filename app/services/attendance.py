@@ -18,6 +18,7 @@ RESULTS = {
     "registrasi",
     "uid_terpakai",
 }
+MAX_AGE_MS = 120_000  # Maksimal toleransi latensi tap adalah 2 menit (120.000 ms)
 
 
 def normalize_uid(uid: str) -> str:
@@ -87,6 +88,8 @@ class AttendanceService:
         normalized = normalize_uid(uid)
         if age_ms < 0:
             age_ms = 0
+        elif age_ms > MAX_AGE_MS:
+            age_ms = MAX_AGE_MS
         tap_time = (current_time or now_local()) - timedelta(milliseconds=age_ms)
         tap_timestamp = tap_time.isoformat(timespec="seconds")
         date = tap_time.date().isoformat()
