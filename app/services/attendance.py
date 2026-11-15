@@ -18,6 +18,7 @@ RESULTS = {
     "registrasi",
     "uid_terpakai",
 }
+MAX_AGE_MS = 120_000  # Maksimal toleransi latensi tap adalah 2 menit (120.000 ms)
 
 
 def normalize_uid(uid: str) -> str:
@@ -29,9 +30,17 @@ def now_local() -> datetime:
     return datetime.now().astimezone()
 
 
-def parse_time_minutes(time_str: str) -> int:
-    parts = time_str.split(":")
-    return int(parts[0]) * 60 + int(parts[1])
+def parse_time_minutes(time_str: str | None) -> int:
+    if not time_str or not isinstance(time_str, str):
+        return 0
+    clean = time_str.strip().replace(".", ":")
+    parts = clean.split(":")
+    if len(parts) >= 2:
+        try:
+            return int(parts[0]) * 60 + int(parts[1])
+        except (ValueError, TypeError):
+            return 0
+    return 0
 
 
 class AttendanceService:
@@ -47,15 +56,15 @@ class AttendanceService:
         number: int | None = None,
         paket: str = "A",
     ) -> int:
-        normalized = normalize_uid(uid) if uid else None
-        paket_val = paket.strip().upper() if paket and paket.strip().upper() in {"A", "B"} else "A"
-        with connect(self.db_path) as connection:
-            cursor = connection.execute(
-                "INSERT INTO santri "
-                "(nomor_urut, rfid_uid, nama, paket, aktif, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (number, normalized, name, paket_val, int(active), now_local().isoformat(timespec="seconds")),
-            )
-            return int(cursor.lastrowid)
+        from app.services.students import StudentService
+
+        student_service = StudentService(self.db_path)
+        sid = student_service.save_student(None, name, number, {}, paket=paket)
+        if not active:
+            student_service.set_active(sid, False)
+        if uid:
+            student_service.register_card(sid, uid, slot=1)
+        return sid
 
     def set_registration(self, student_id: int, minutes: int = 2) -> None:
         expires = now_local() + timedelta(minutes=minutes)
@@ -78,6 +87,8 @@ class AttendanceService:
         normalized = normalize_uid(uid)
         if age_ms < 0:
             age_ms = 0
+        elif age_ms > MAX_AGE_MS:
+            age_ms = MAX_AGE_MS
         tap_time = (current_time or now_local()) - timedelta(milliseconds=age_ms)
         tap_timestamp = tap_time.isoformat(timespec="seconds")
         date = tap_time.date().isoformat()
@@ -105,9 +116,18 @@ class AttendanceService:
                 except ValueError:
                     registration_active = False
 
-            student = connection.execute(
-                "SELECT * FROM santri WHERE rfid_uid = ?", (normalized,)
+            card = connection.execute(
+                "SELECT k.rfid_uid AS card_uid, k.nomor_kartu_custom, k.slot, k.label AS card_label, s.* "
+                "FROM kartu_santri k JOIN santri s ON k.santri_id = s.id WHERE k.rfid_uid = ?",
+                (normalized,),
             ).fetchone()
+            if card:
+                student = card
+            else:
+                student = connection.execute(
+                    "SELECT * FROM santri WHERE rfid_uid = ?", (normalized,)
+                ).fetchone()
+
             result = "tidak_dikenal"
             student_id = None
             waktu = None
@@ -121,10 +141,27 @@ class AttendanceService:
                     result = "uid_terpakai"
                     student_id = None
                 elif student is None:
-                    connection.execute(
-                        "UPDATE santri SET rfid_uid = ? WHERE id = ?",
-                        (normalized, target_id),
-                    )
+                    target_row = connection.execute(
+                        "SELECT * FROM santri WHERE id = ?", (target_id,)
+                    ).fetchone()
+                    if target_row:
+                        nomor_kartu = str(target_row["nomor_urut"]) if target_row["nomor_urut"] is not None else ""
+                        has_slot1 = connection.execute(
+                            "SELECT 1 FROM kartu_santri WHERE santri_id = ? AND slot = 1", (target_id,)
+                        ).fetchone()
+                        slot = 2 if has_slot1 else 1
+                        label = "Kartu 2" if slot == 2 else "Kartu 1"
+                        now_str = now_local().isoformat(timespec="seconds")
+                        connection.execute(
+                            "INSERT INTO kartu_santri (santri_id, rfid_uid, nomor_kartu_custom, slot, label, created_at) "
+                            "VALUES (?, ?, ?, ?, ?, ?)",
+                            (target_id, normalized, nomor_kartu, slot, label, now_str),
+                        )
+                        if slot == 1 or not target_row["rfid_uid"]:
+                            connection.execute(
+                                "UPDATE santri SET rfid_uid = ? WHERE id = ?",
+                                (normalized, target_id),
+                            )
                     set_setting(connection, "registrasi_santri_id", None)
                     set_setting(connection, "registrasi_expires", None)
                     student = connection.execute(
@@ -287,9 +324,17 @@ class AttendanceService:
         if result != "tidak_dikenal" and student:
             student_keys = student.keys() if hasattr(student, "keys") else []
             paket = student["paket"] if "paket" in student_keys else "A"
+            nomor_custom = (
+                student["nomor_kartu_custom"]
+                if "nomor_kartu_custom" in student_keys and student["nomor_kartu_custom"]
+                else (str(student["nomor_urut"]) if student["nomor_urut"] is not None else "")
+            )
+            card_label = student["card_label"] if "card_label" in student_keys else None
             response.update({
                 "nama": student["nama"],
                 "nomor_urut": student["nomor_urut"],
+                "nomor_kartu_custom": nomor_custom,
+                "card_label": card_label,
                 "paket": paket,
                 "paket_label": "Paket A (Half Day)" if paket == "A" else "Paket B (Full Day)",
             })
@@ -305,7 +350,12 @@ class AttendanceService:
         self, connection: sqlite3.Connection, log: sqlite3.Row
     ) -> dict[str, Any]:
         student = (
-            connection.execute("SELECT * FROM santri WHERE id = ?", (log["santri_id"],)).fetchone()
+            connection.execute(
+                "SELECT k.rfid_uid AS card_uid, k.nomor_kartu_custom, k.slot, k.label AS card_label, s.* "
+                "FROM santri s LEFT JOIN kartu_santri k ON k.santri_id = s.id AND k.rfid_uid = ? "
+                "WHERE s.id = ?",
+                (log["rfid_uid"], log["santri_id"]),
+            ).fetchone()
             if log["santri_id"]
             else None
         )

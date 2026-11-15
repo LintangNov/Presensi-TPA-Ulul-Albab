@@ -58,7 +58,9 @@
     badgeEl.textContent = badgeLabel;
 
     nameEl.textContent = result.nama || `Kartu: ${uid || "-"}`;
-    noEl.textContent = result.nomor_urut ? `No. Absen: #${result.nomor_urut}` : "No. Absen: -";
+    const noText = result.nomor_urut ? `No. Absen: #${result.nomor_urut}` : "No. Absen: -";
+    const cardInfo = result.card_label ? ` • ${result.card_label}` : "";
+    noEl.textContent = `${noText}${cardInfo}`;
     paketEl.textContent = result.paket_label || (result.paket ? `Paket ${result.paket}` : "Paket TPA");
     timeEl.textContent = `Pukul: ${result.waktu || new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}`;
     msgEl.textContent = result.pesan || "";
@@ -117,7 +119,35 @@
     }
   };
 
-  // Cadangan direct keystroke listener jika tab ini kebetulan sedang fokus
+  // Focus Loss Guard: Deteksi apakah jendela scanner aktif
+  const focusWarning = document.querySelector("#tv-focus-warning");
+  const activateBtn = document.querySelector("#btn-activate-scanner");
+
+  function updateFocusUI() {
+    const active = document.hasFocus();
+    if (focusWarning) {
+      focusWarning.style.display = active ? "none" : "flex";
+    }
+  }
+
+  window.addEventListener("focus", updateFocusUI);
+  window.addEventListener("blur", updateFocusUI);
+  document.addEventListener("visibilitychange", updateFocusUI);
+  window.addEventListener("click", () => {
+    window.focus();
+    updateFocusUI();
+  });
+  if (activateBtn) {
+    activateBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.focus();
+      updateFocusUI();
+    });
+  }
+  setInterval(updateFocusUI, 1000);
+  setTimeout(updateFocusUI, 300);
+
+  // Direct keystroke listener untuk pembacaan kartu di jendela scanner
   async function sendLocalTap(uid) {
     try {
       const res = await fetch("/api/tap", {
@@ -134,6 +164,12 @@
   }
 
   document.addEventListener("keydown", (e) => {
+    // Jika jendela scanner sedang tidak aktif (kehilangan fokus), abaikan keystroke
+    if (!document.hasFocus()) {
+      buffer = "";
+      return;
+    }
+
     if (e.key === "Enter") {
       if (buffer.length >= 3) {
         e.preventDefault();

@@ -4,7 +4,7 @@
 <form method="get" action="/admin/rekap" class="report-filters">
   <label>Mulai <input type="date" name="mulai" value="{{ mulai }}"></label>
   <label>Sampai <input type="date" name="sampai" value="{{ sampai }}"></label>
-  <label>Murid <select name="santri_id">
+  <label>Murid <select name="student_id">
       <option value="">Semua murid</option>{% for student in students %}<option value="{{ student.id }}" {% if
         selected_student==student.id %}selected{% endif %}>{{ student.nama }}</option>{% endfor %}
     </select></label>
@@ -15,7 +15,7 @@
   <button type="submit">Tampilkan</button>
 </form>
 <p><a role="button"
-    href="/admin/rekap/export.xlsx?mulai={{ mulai }}&sampai={{ sampai }}{% if selected_student %}&santri_id={{ selected_student }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">Unduh
+    href="/admin/rekap/export.xlsx?mulai={{ mulai }}&sampai={{ sampai }}{% if selected_student %}&student_id={{ selected_student }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">Unduh
     Excel (.xlsx)</a></p>
 <h3>Ringkasan per murid</h3>
 {% if summary %}
@@ -68,11 +68,22 @@
       <td>{{ "Paket A" if row.paket == "A" else "Paket B" }}</td>
       <td>{{ row.waktu or "-" }}</td>
       <td>{{ row.waktu_pulang or "-" }}</td>
-      <td>{{ row.nama_pengantar or "-" }}</td>
+      <td>
+        {{ row.nama_pengantar or "-" }}
+        {% if row.alasan_tanpa_kartu %}
+          <div style="font-size: 0.75rem; color: #718096;" title="Alasan masuk tanpa kartu">
+            ℹ️ {{ row.alasan_tanpa_kartu }}
+          </div>
+        {% endif %}
+      </td>
       <td>
         {{ row.nama_penjemput or "-" }}
-        {% if row.alasan_tanpa_kartu %}
-          <div style="font-size: 0.75rem; color: #718096;" title="Alasan tanpa kartu">
+        {% if row.alasan_penjemputan_tanpa_kartu %}
+          <div style="font-size: 0.75rem; color: #718096;" title="Alasan penjemputan tanpa kartu">
+            ℹ️ {{ row.alasan_penjemputan_tanpa_kartu }}
+          </div>
+        {% elif row.alasan_tanpa_kartu and not row.alasan_penjemputan_tanpa_kartu and row.waktu_pulang and not row.nama_pengantar %}
+          <div style="font-size: 0.75rem; color: #718096;" title="Alasan penjemputan tanpa kartu">
             ℹ️ {{ row.alasan_tanpa_kartu }}
           </div>
         {% endif %}

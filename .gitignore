@@ -1,7 +1,32 @@
-# File Aider
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller build artifacts
+build/
+dist/
+*.manifest
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Testing cache
+.pytest_cache/
+
+# Application Logs
+logs/
+
+# Database files & backups (Data sensitif santri & absensi)
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.db.tmp
+data/backup/
+
+# File Aider & Scratch
 .aider*
-
-# Upload dari Telegram
 .bot_uploads/
-
 note.txt

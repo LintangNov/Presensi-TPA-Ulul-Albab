@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
 {% block content %}
 <section class="today-page-container">
-  <div id="today-live-section" hx-get="/admin/hari-ini" hx-trigger="every 3s" hx-select="#today-live-section" hx-target="#today-live-section" hx-swap="outerHTML">
+  <div id="today-live-section" hx-get="/admin/hari-ini" hx-trigger="every 3s [!document.querySelector('#today-live-section details[open]') && !document.querySelector('#today-live-section input:focus, #today-live-section select:focus, #today-live-section textarea:focus')]" hx-select="#today-live-section" hx-target="#today-live-section" hx-swap="outerHTML">
     <h2>Absensi Hari Ini</h2>
     <div class="summary-grid">
       <article><strong>{{ present_count }} dari {{ active_count }}</strong><span>murid hadir masuk</span></article>
@@ -43,10 +43,21 @@
           <td>{{ "Paket A" if row.paket == "A" else "Paket B" }}</td>
           <td>{{ row.waktu or "-" }}</td>
           <td>{{ row.waktu_pulang or "-" }}</td>
-          <td>{{ row.nama_pengantar or "-" }}</td>
+          <td>
+            {{ row.nama_pengantar or "-" }}
+            {% if row.alasan_tanpa_kartu %}
+              <div style="font-size: 0.78rem; color: #4a5568; margin-top: 0.2rem; background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;" title="Alasan masuk tanpa kartu">
+                Kartu: <em>{{ row.alasan_tanpa_kartu }}</em>
+              </div>
+            {% endif %}
+          </td>
           <td>
             {{ row.nama_penjemput or "-" }}
-            {% if row.alasan_tanpa_kartu %}
+            {% if row.alasan_penjemputan_tanpa_kartu %}
+              <div style="font-size: 0.78rem; color: #4a5568; margin-top: 0.2rem; background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;" title="Alasan penjemputan tanpa kartu">
+                Kartu: <em>{{ row.alasan_penjemputan_tanpa_kartu }}</em>
+              </div>
+            {% elif row.alasan_tanpa_kartu and not row.alasan_penjemputan_tanpa_kartu and row.waktu_pulang and not row.nama_pengantar %}
               <div style="font-size: 0.78rem; color: #4a5568; margin-top: 0.2rem; background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;" title="Alasan penjemputan tanpa kartu">
                 Kartu: <em>{{ row.alasan_tanpa_kartu }}</em>
               </div>
@@ -106,8 +117,12 @@
                     placeholder="Ketik nama penjemput...">
                 </div>
 
-                <label>Alasan Tanpa Kartu (Opsional)
-                  <input type="text" name="alasan_tanpa_kartu" value="{{ row.alasan_tanpa_kartu or '' }}" placeholder="Alasan jika tanpa kartu">
+                <label>Alasan Masuk Tanpa Kartu (Opsional)
+                  <input type="text" name="alasan_tanpa_kartu" value="{{ row.alasan_tanpa_kartu or '' }}" placeholder="Alasan masuk jika tanpa kartu">
+                </label>
+
+                <label>Alasan Penjemputan Tanpa Kartu (Opsional)
+                  <input type="text" name="alasan_penjemputan_tanpa_kartu" value="{{ row.alasan_penjemputan_tanpa_kartu or '' }}" placeholder="Alasan penjemputan jika tanpa kartu">
                 </label>
 
                 <label>Catatan
@@ -238,9 +253,14 @@
         <input type="text" class="input-custom-text" name="nama_penjemput_lainnya" placeholder="Ketik nama penjemput..." style="display: none;">
       </div>
 
+      <!-- Alasan Masuk Tanpa Kartu (Opsional) -->
+      <label>Alasan Masuk Tanpa Kartu (Opsional)
+        <input type="text" name="alasan_tanpa_kartu" placeholder="Cth: Kartu murid tertinggal">
+      </label>
+
       <!-- Alasan Penjemputan Tanpa Kartu (Opsional) -->
-      <label>Alasan Tanpa Kartu (Opsional)
-        <input type="text" name="alasan_tanpa_kartu" placeholder="Cth: Kartu tertinggal / rusak">
+      <label>Alasan Penjemputan Tanpa Kartu (Opsional)
+        <input type="text" name="alasan_penjemputan_tanpa_kartu" placeholder="Cth: Kartu penjemput tertinggal">
       </label>
 
       <!-- Catatan (Span 2 Kolom agar proporsional) -->

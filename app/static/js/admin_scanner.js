@@ -1,8 +1,11 @@
 (() => {
   const channel = new BroadcastChannel("absensi_tpa_channel");
+  const RFID_BURST_MAX_INTERVAL_MS = 60; // Batas interval antar-karakter keyboard emulator USB (< 60ms)
+  const RFID_MIN_LENGTH = 4;             // Panjang minimal UID kartu
   let buffer = "";
   let lastKeyTime = 0;
   let bufferTimer = null;
+  let isBurstSequence = false;
 
   function isScannerActive() {
     const val = localStorage.getItem("absensi_scanner_active");
@@ -120,60 +123,73 @@
     while (feed.children.length > 5) feed.lastElementChild.remove();
   }
 
-  // Scanner Guard: intercept input clicks if scanner is active
-  document.addEventListener("click", (e) => {
-    if (!isScannerActive()) return;
-
-    // Kecualikan toggle scanner, sidebar navigasi, dialog daftarkan kartu, dan tombol penting
-    if (
-      e.target.closest("#scanner-toggle-container") ||
-      e.target.closest(".admin-sidebar") ||
-      e.target.closest("#register-dialog") ||
-      e.target.closest("#delete-confirm-dialog") ||
-      e.target.closest("#reset-confirm-dialog")
-    ) {
-      return;
-    }
-
-    const isInput = e.target.matches("input:not([type=checkbox]):not([type=radio]), select, textarea");
-    if (isInput) {
-      e.preventDefault();
-      e.target.blur();
-      showAdminToast("Mode Scanner aktif. Matikan toggle scanner jika ingin mengisi data formulir.", "warning");
-    }
-  });
-
-  // Global Keystroke listener for RFID reader
+  // Keystroke listener dengan RFID Burst Timing Detection (Solusi 1)
+  // Membedakan ketikan manusia (>80ms) dengan kecepatan perangkat keras RFID (<60ms)
   document.addEventListener("keydown", (e) => {
-    // Jika dialog registrasi kartu sedang aktif, biarkan dialog menangani inputnya sendiri
+    // 1. Jika dialog registrasi kartu sedang aktif, biarkan dialog menangani inputnya sendiri
     const regDialog = document.querySelector("#register-dialog");
     if (regDialog && regDialog.open) return;
 
+    // 2. Jika scanner dinonaktifkan via toggle admin
     if (!isScannerActive()) return;
 
+    const isInsideInput = e.target.matches("input:not([type=checkbox]):not([type=radio]), select, textarea");
     const now = Date.now();
     const interval = now - lastKeyTime;
     lastKeyTime = now;
 
+    // 3. Tangani tombol Enter (akhir kiriman kartu reader)
     if (e.key === "Enter") {
-      if (buffer.length >= 3) {
+      if (buffer.length >= RFID_MIN_LENGTH && isBurstSequence) {
         e.preventDefault();
         const scannedUid = buffer;
         buffer = "";
+        isBurstSequence = false;
         clearTimeout(bufferTimer);
+
+        // Bersihkan input teks jika kursor sedang berada di dalam form saat kartu di-tap
+        if (isInsideInput && typeof e.target.value === "string") {
+          if (e.target.value.endsWith(scannedUid)) {
+            e.target.value = e.target.value.slice(0, -scannedUid.length);
+          }
+        }
+
         sendTap(scannedUid);
         return;
       }
+
+      // Enter ditekan manusia atau buffer belum memenuhi kriteria kartu
       buffer = "";
+      isBurstSequence = false;
       return;
     }
 
+    // 4. Tangani karakter biasa
     if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-      buffer += e.key;
+      if (buffer.length === 0) {
+        buffer = e.key;
+        isBurstSequence = true;
+      } else {
+        if (interval <= RFID_BURST_MAX_INTERVAL_MS) {
+          buffer += e.key;
+        } else {
+          // Jeda lebih lambat dari 60ms: terdeteksi sebagai ketikan manusia
+          if (isInsideInput) {
+            buffer = "";
+            isBurstSequence = false;
+            return;
+          } else {
+            buffer = e.key;
+            isBurstSequence = true;
+          }
+        }
+      }
+
       clearTimeout(bufferTimer);
       bufferTimer = setTimeout(() => {
         buffer = "";
-      }, 700);
+        isBurstSequence = false;
+      }, 500);
     }
   });
 

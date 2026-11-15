@@ -193,6 +193,49 @@
     .tv-badge-denda { background: var(--error); color: var(--text); }
     .tv-badge-duplikat { background: var(--warning); color: var(--text); }
     .tv-badge-error { background: var(--error); color: var(--text); }
+
+    /* Overlay Peringatan Fokus Scanner Tidak Aktif */
+    .tv-focus-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(43, 42, 38, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .tv-focus-modal {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg, 16px);
+      padding: clamp(1.5rem, 4vw, 2.5rem);
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+    }
+    .tv-focus-icon {
+      font-size: clamp(2.5rem, 5vw, 3.8rem);
+      margin-bottom: 0.75rem;
+    }
+    .btn-focus-activate {
+      min-height: 3.2rem;
+      padding: 0.8rem 1.8rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border-radius: var(--radius-sm, 8px);
+      background: var(--primary, #3283e7);
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(50, 131, 231, 0.3);
+      transition: background 0.15s ease;
+    }
+    .btn-focus-activate:hover {
+      background: #246ac5;
+    }
   </style>
 </head>
 <body class="tv-display">
@@ -247,6 +290,22 @@
       </ul>
     </div>
   </main>
+
+  <!-- Overlay Peringatan Fokus Scanner Tidak Aktif (Focus Loss Guard) -->
+  <div id="tv-focus-warning" class="tv-focus-overlay" style="display: none;">
+    <div class="tv-focus-modal">
+      <div class="tv-focus-icon">⚠️</div>
+      <h2 style="font-size: clamp(1.6rem, 3.5vw, 2.2rem); margin: 0 0 0.5rem 0; font-weight: 800; color: var(--text);">
+        SCANNER TIDAK AKTIF
+      </h2>
+      <p style="font-size: clamp(0.95rem, 1.8vw, 1.15rem); margin: 0 0 1.5rem 0; color: var(--text-muted); line-height: 1.5;">
+        Jendela ini sedang tidak aktif (kehilangan fokus). Klik tombol di bawah atau klik area layar ini agar reader RFID dapat membaca kartu murid.
+      </p>
+      <button type="button" class="btn-focus-activate" id="btn-activate-scanner">
+        Aktifkan Scanner Sekarang
+      </button>
+    </div>
+  </div>
 
   <script src="{{ url_for('static', path='js/scanner.js') }}"></script>
 </body>

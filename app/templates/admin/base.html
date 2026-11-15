@@ -17,7 +17,7 @@
         <h3>Sistem Presensi</h3>
         <h1>TPA Ulul Albab</h1>
       </div>
-      <div id="sidebar-scanner-box" style="background: rgba(255,255,255,0.7); border-radius: 8px; padding: 0.6rem 0.8rem; margin: -0.5rem 0 0.5rem 0; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+      <div id="sidebar-scanner-box" style="background: var(--surface); opacity: 0.9; border-radius: var(--radius-sm); padding: 0.6rem 0.8rem; margin: -0.5rem 0 0.5rem 0; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
         <span id="scanner-operational-indicator" class="status-dot active"></span>
         <span style="font-weight: 600;" id="sidebar-scanner-status" class="scanner-operational-status">Memuat…</span>
       </div>
@@ -25,7 +25,7 @@
         <a href="/admin" {% if request.url.path == "/admin" %}aria-current="page"{% endif %}>Dashboard</a>
 
         <a href="/admin/hari-ini" {% if request.url.path == "/admin/hari-ini" %}aria-current="page"{% endif %}>Absensi Hari Ini</a>
-        <a href="/admin/santri" {% if request.url.path == "/admin/santri" %}aria-current="page"{% endif %}>Data Murid</a>
+        <a href="/admin/murid" {% if request.url.path.startswith('/admin/murid') or request.url.path.startswith('/admin/santri') %}aria-current="page"{% endif %}>Data Murid</a>
         <a href="/admin/rekap" {% if request.url.path.startswith("/admin/rekap") %}aria-current="page"{% endif %}>Rekap & Laporan</a>
         <a href="/admin/import" {% if request.url.path.startswith("/admin/import") %}aria-current="page"{% endif %}>Impor Excel</a>
         <a href="/admin/fields" {% if request.url.path.startswith("/admin/fields") %}aria-current="page"{% endif %}>Pengaturan</a>
