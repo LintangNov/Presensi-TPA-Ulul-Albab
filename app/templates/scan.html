@@ -39,8 +39,8 @@
     .tv-brand h1 {
       margin: 0;
       font-size: clamp(1.2rem, 2.5vw, 1.8rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
+      font-weight: 600;
+      letter-spacing: normal;
       color: var(--text);
     }
     .tv-clock {
@@ -48,17 +48,20 @@
       align-items: center;
       gap: 1rem;
       font-size: clamp(0.9rem, 1.8vw, 1.25rem);
-      font-weight: 700;
+      font-weight: 500;
       color: var(--text);
     }
     .tv-time {
-      background: var(--primary-soft);
+      background: #f1f5f9;
       padding: 0.35rem 0.85rem;
-      border-radius: 8px;
+      border-radius: 6px;
       border: 1px solid var(--border);
       color: var(--text);
-      font-family: monospace;
-      font-size: clamp(1rem, 2vw, 1.4rem);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      font-weight: 600;
+      letter-spacing: 0.02em;
     }
     .tv-main {
       flex: 1;
@@ -108,21 +111,21 @@
     }
     .tv-active-badge {
       display: inline-block;
-      padding: 0.5rem 1.4rem;
+      padding: 0.45rem 1.25rem;
       border-radius: 999px;
-      font-size: clamp(0.95rem, 1.8vw, 1.35rem);
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-size: clamp(0.95rem, 1.8vw, 1.2rem);
+      font-weight: 600;
+      letter-spacing: normal;
       margin-bottom: 1rem;
     }
     .tv-active-name {
-      font-size: clamp(2rem, 5vw, 3.6rem);
-      font-weight: 900;
-      line-height: 1.15;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 600;
+      line-height: 1.2;
       margin: 0.25rem 0 0.75rem 0;
       color: var(--text);
       text-shadow: none;
+      letter-spacing: normal;
     }
     .tv-active-meta {
       display: flex;
@@ -133,28 +136,29 @@
       margin-bottom: 1rem;
     }
     .tv-meta-pill {
-      background: var(--primary-soft);
+      background: var(--neutral-bg, #f1f5f9);
       border: 1px solid var(--border);
       color: var(--text);
       padding: 0.4rem 1rem;
       border-radius: 8px;
-      font-size: clamp(0.9rem, 1.5vw, 1.15rem);
-      font-weight: 700;
+      font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
     }
     .tv-denda-alert {
-      background: var(--error);
-      border: 2px solid var(--text);
-      color: var(--text);
-      border-radius: 12px;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      color: var(--danger-text);
+      border-radius: 8px;
       padding: 0.85rem 1.5rem;
       margin-top: 1rem;
-      font-size: clamp(1rem, 2vw, 1.35rem);
-      font-weight: 800;
-      animation: alert-blink 1.2s infinite;
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-weight: 600;
+      animation: alert-appear 0.25s ease-out;
     }
-    @keyframes alert-blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.8; }
+    @keyframes alert-appear {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .tv-idle-icon {
       font-size: clamp(3rem, 7vw, 5rem);
@@ -188,11 +192,41 @@
       font-size: clamp(0.85rem, 1.4vw, 1rem);
       color: var(--text);
     }
-    .tv-badge-masuk { background: var(--success); color: var(--text); }
-    .tv-badge-pulang { background: var(--info); color: var(--text); }
-    .tv-badge-denda { background: var(--error); color: var(--text); }
-    .tv-badge-duplikat { background: var(--warning); color: var(--text); }
-    .tv-badge-error { background: var(--error); color: var(--text); }
+    .tv-badge-masuk { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
+    .tv-badge-pulang { background: var(--info-bg); border-color: var(--info-border); color: var(--info-text); }
+    .tv-badge-denda { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); }
+    .tv-badge-duplikat { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-text); }
+    .tv-badge-error { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); }
+
+    .live-update-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    .pulse-dot {
+      position: relative;
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+    .pulse-dot::after {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 2px solid #10b981;
+      opacity: 0.75;
+      animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      70%, 100% { transform: scale(2.2); opacity: 0; }
+    }
 
     /* Overlay Peringatan Fokus Scanner Tidak Aktif */
     .tv-focus-overlay {
@@ -224,17 +258,18 @@
       min-height: 3.2rem;
       padding: 0.8rem 1.8rem;
       font-size: 1.1rem;
-      font-weight: 700;
+      font-weight: 600;
       border-radius: var(--radius-sm, 8px);
-      background: var(--primary, #3283e7);
-      color: #ffffff;
-      border: none;
+      background: var(--primary);
+      color: var(--primary-contrast, #ffffff);
+      border: 1px solid var(--primary);
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(50, 131, 231, 0.3);
-      transition: background 0.15s ease;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(15, 23, 42, 0.06);
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
     .btn-focus-activate:hover {
-      background: #246ac5;
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
     }
   </style>
 </head>
@@ -281,10 +316,13 @@
     <div class="tv-card-history">
       <div class="tv-history-title">
         <span>Riwayat Tap Terkini</span>
-        <span style="font-size: 0.85rem; color: var(--text); font-weight: 600;">🟢 Live Update</span>
+        <span class="live-update-badge">
+          <span class="pulse-dot"></span>
+          Live Update
+        </span>
       </div>
       <ul id="tv-history-list" class="tv-history-list">
-        <li id="tv-history-empty" style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-style: italic;">
+        <li id="tv-history-empty" style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-style: normal;">
           Menunggu aktivitas absensi hari ini...
         </li>
       </ul>
@@ -294,9 +332,11 @@
   <!-- Overlay Peringatan Fokus Scanner Tidak Aktif (Focus Loss Guard) -->
   <div id="tv-focus-warning" class="tv-focus-overlay" style="display: none;">
     <div class="tv-focus-modal">
-      <div class="tv-focus-icon">⚠️</div>
-      <h2 style="font-size: clamp(1.6rem, 3.5vw, 2.2rem); margin: 0 0 0.5rem 0; font-weight: 800; color: var(--text);">
-        SCANNER TIDAK AKTIF
+      <div class="tv-focus-icon" style="color: #e11d48; display: flex; justify-content: center; margin-bottom: 0.75rem;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h2 style="font-size: clamp(1.4rem, 3vw, 1.8rem); margin: 0 0 0.5rem 0; font-weight: 600; color: var(--text);">
+        Scanner Tidak Aktif
       </h2>
       <p style="font-size: clamp(0.95rem, 1.8vw, 1.15rem); margin: 0 0 1.5rem 0; color: var(--text-muted); line-height: 1.5;">
         Jendela ini sedang tidak aktif (kehilangan fokus). Klik tombol di bawah atau klik area layar ini agar reader RFID dapat membaca kartu anak.

@@ -13,14 +13,28 @@
       <article><strong>{{ absent|length }}</strong><span>belum hadir</span></article>
     </div>
 
-    <h3>Belum hadir</h3>
-    <ul>
-      {% for row in absent %}
-      <li>{{ row.nomor_urut or "-" }} - {{ row.nama }} ({{ "Paket A" if row.paket == 'A' else "Paket B" }})</li>
+    <div class="unpresent-card">
+      <div class="unpresent-header">
+        <span class="unpresent-title">Anak Belum Hadir</span>
+        <span class="unpresent-count">{{ absent|length }} anak</span>
+      </div>
+      {% if absent %}
+      <div class="unpresent-grid">
+        {% for row in absent %}
+        <div class="unpresent-chip">
+          <span class="unpresent-no">#{{ row.nomor_urut or "-" }}</span>
+          <span class="unpresent-name">{{ row.nama }}</span>
+          <span class="unpresent-paket">{{ "Half Day" if row.paket == 'A' else "Full Day" }}</span>
+        </div>
+        {% endfor %}
+      </div>
       {% else %}
-      <li>Semua anak aktif sudah memiliki catatan absensi hari ini.</li>
-      {% endfor %}
-    </ul>
+      <p class="unpresent-empty">
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        Semua anak aktif sudah memiliki catatan absensi hari ini.
+      </p>
+      {% endif %}
+    </div>
 
     <h3>Daftar absensi</h3>
     {% if rows %}
@@ -76,10 +90,15 @@
           <td>
             {% if row.status_pulang %}
             {% if "Denda" in row.status_pulang %}
-            <span class="badge error" style="font-size: 0.8rem;">⚠️ {{ row.status_pulang }} ({{ row.denda_menit }}
-              mnt)</span>
+            <span class="badge error" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+              <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              {{ row.status_pulang }} ({{ row.denda_menit }} mnt)
+            </span>
             {% else %}
-            <span class="badge success" style="font-size: 0.8rem;">✓ {{ row.status_pulang }}</span>
+            <span class="badge success" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+              <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              {{ row.status_pulang }}
+            </span>
             {% endif %}
             {% else %}
             <span style="color: #a0aec0; font-size: 0.85rem;">Belum pulang</span>

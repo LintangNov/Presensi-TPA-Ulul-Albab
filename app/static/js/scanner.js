@@ -38,20 +38,20 @@
 
     const hasil = result.hasil || "berhasil";
     let badgeClass = "tv-badge-masuk";
-    let badgeLabel = "ABSEN MASUK";
+    let badgeLabel = "Absen Masuk";
 
     if (hasil === "pulang") {
       badgeClass = "tv-badge-pulang";
-      badgeLabel = "PENJEMPUTAN (PULANG)";
+      badgeLabel = "Penjemputan (Pulang)";
     } else if (hasil === "denda") {
       badgeClass = "tv-badge-denda";
-      badgeLabel = "⚠️ DENDA KETERLAMBATAN PENJEMPUTAN";
+      badgeLabel = "Denda Keterlambatan";
     } else if (hasil === "duplikat") {
       badgeClass = "tv-badge-duplikat";
-      badgeLabel = "SUDAH TERCATAT HARI INI";
+      badgeLabel = "Sudah Tercatat Hari Ini";
     } else if (hasil === "tidak_dikenal" || hasil === "tidak_aktif") {
       badgeClass = "tv-badge-error";
-      badgeLabel = hasil === "tidak_dikenal" ? "KARTU BELUM TERDAFTAR" : "ANAK NONAKTIF";
+      badgeLabel = hasil === "tidak_dikenal" ? "Kartu Belum Terdaftar" : "Anak Nonaktif";
     }
 
     badgeEl.className = `tv-active-badge ${badgeClass}`;

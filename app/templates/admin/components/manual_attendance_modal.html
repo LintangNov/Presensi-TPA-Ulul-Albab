@@ -13,11 +13,13 @@
 
     <form method="post" action="/admin/absensi-manual" id="form-manual-attendance" class="manual-modal-form">
       <input type="hidden" name="return_to" value="dashboard">
+      <input type="hidden" name="status_pulang" id="manual-status-pulang" value="">
+      <input type="hidden" name="denda_menit" id="manual-denda-menit" value="0">
 
       <div class="manual-modal-body">
         <div class="manual-modal-grid">
-          <!-- Pilih Anak -->
-          <label class="field-span-2">Anak
+          <!-- Baris 1: Kolom Anak dan Tanggal (2 Kolom) -->
+          <label class="col-span-3">Anak
             <select name="student_id" id="manual-student-select" required>
               <option value="">-- Pilih Anak --</option>
               {% for row in rows %}
@@ -30,8 +32,7 @@
             </select>
           </label>
 
-          <!-- Tanggal Presensi (DD/MM/YYYY) dengan Ikon Kalender Visual -->
-          <label>Tanggal
+          <label class="col-span-3">Tanggal
             <div style="position: relative; display: flex; align-items: center; width: 100%;">
               <input 
                 type="text" 
@@ -62,8 +63,8 @@
             </div>
           </label>
 
-          <!-- Status Kehadiran -->
-          <label>Status Hadir
+          <!-- Baris 2: Status Kehadiran (Kolom Kanan Kosong / Spacer) -->
+          <label class="col-span-3">Status Hadir
             <select name="status" id="manual-status-select">
               <option value="Hadir">Hadir</option>
               <option value="Izin">Izin</option>
@@ -71,12 +72,14 @@
               <option value="Alpha">Alpha</option>
             </select>
           </label>
+          <div class="col-span-3 form-spacer" aria-hidden="true"></div>
 
-          <!-- Jam Masuk (24 Jam: 00.00 - 23.59) -->
-          <label>Jam Masuk (24 Jam)
+          <!-- Baris 3: Jam Masuk, Nama Pengantar, Alasan Masuk Tanpa Kartu (3 Kolom) -->
+          <label class="col-span-2">Jam Masuk (24 Jam)
             <input 
               type="text" 
               name="waktu" 
+              id="manual-jam-masuk"
               class="input-jam-24" 
               placeholder="07.00" 
               maxlength="5" 
@@ -86,11 +89,27 @@
             >
           </label>
 
-          <!-- Jam Pulang (24 Jam: 00.00 - 23.59) -->
-          <label>Jam Pulang (24 Jam)
+          <div class="form-group-combo dropdown-with-custom col-span-2">
+            <label>Nama Pengantar</label>
+            <select name="nama_pengantar" id="manual-select-pengantar">
+              <option value="">-- Pilih Pengantar --</option>
+              <option value="Ayah">Ayah</option>
+              <option value="Ibu">Ibu</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+            <input type="text" class="input-custom-text" name="nama_pengantar_lainnya" id="manual-input-pengantar-lainnya" placeholder="Ketik nama pengantar..." style="display: none; margin-top: 0.35rem;">
+          </div>
+
+          <label class="col-span-2">Alasan Masuk Tanpa Kartu
+            <input type="text" name="alasan_tanpa_kartu" id="manual-alasan-masuk" placeholder="Cth: Kartu anak tertinggal">
+          </label>
+
+          <!-- Baris 4: Jam Pulang, Nama Penjemput, Alasan Penjemputan Tanpa Kartu (3 Kolom) -->
+          <label class="col-span-2">Jam Pulang (24 Jam)
             <input 
               type="text" 
               name="waktu_pulang" 
+              id="manual-jam-pulang"
               class="input-jam-24" 
               placeholder="13.00" 
               maxlength="5" 
@@ -100,43 +119,29 @@
             >
           </label>
 
-          <!-- Dropdown Pengantar dengan Teks Lainnya -->
-          <div class="form-group-combo dropdown-with-custom">
-            <label>Nama Pengantar</label>
-            <select name="nama_pengantar">
-              <option value="">-- Pilih Pengantar --</option>
-              <option value="Ayah">Ayah</option>
-              <option value="Ibu">Ibu</option>
-              <option value="Lainnya">Lainnya</option>
-            </select>
-            <input type="text" class="input-custom-text" name="nama_pengantar_lainnya" placeholder="Ketik nama pengantar..." style="display: none; margin-top: 0.35rem;">
-          </div>
-
-          <!-- Dropdown Penjemput dengan Teks Lainnya -->
-          <div class="form-group-combo dropdown-with-custom">
+          <div class="form-group-combo dropdown-with-custom col-span-2">
             <label>Nama Penjemput</label>
-            <select name="nama_penjemput">
+            <select name="nama_penjemput" id="manual-select-penjemput">
               <option value="">-- Pilih Penjemput --</option>
               <option value="Ayah">Ayah</option>
               <option value="Ibu">Ibu</option>
               <option value="Lainnya">Lainnya</option>
             </select>
-            <input type="text" class="input-custom-text" name="nama_penjemput_lainnya" placeholder="Ketik nama penjemput..." style="display: none; margin-top: 0.35rem;">
+            <input type="text" class="input-custom-text" name="nama_penjemput_lainnya" id="manual-input-penjemput-lainnya" placeholder="Ketik nama penjemput..." style="display: none; margin-top: 0.35rem;">
           </div>
 
-          <!-- Alasan Masuk Tanpa Kartu (Opsional) -->
-          <label>Alasan Masuk Tanpa Kartu
-            <input type="text" name="alasan_tanpa_kartu" placeholder="Cth: Kartu anak tertinggal">
+          <label class="col-span-2">Alasan Penjemputan Tanpa Kartu
+            <input type="text" name="alasan_penjemputan_tanpa_kartu" id="manual-alasan-pulang" placeholder="Cth: Kartu penjemput tertinggal">
           </label>
 
-          <!-- Alasan Penjemputan Tanpa Kartu (Opsional) -->
-          <label>Alasan Penjemputan Tanpa Kartu
-            <input type="text" name="alasan_penjemputan_tanpa_kartu" placeholder="Cth: Kartu penjemput tertinggal">
-          </label>
-
-          <!-- Catatan (Span 2 Kolom) -->
-          <label class="field-span-2">Catatan Tambahan
-            <input name="catatan" placeholder="Catatan tambahan (opsional)...">
+          <!-- Baris 5: Catatan Tambahan (Form Besar / Textarea 100%) -->
+          <label class="col-span-6">Catatan Tambahan
+            <textarea 
+              name="catatan" 
+              id="manual-catatan" 
+              rows="3" 
+              placeholder="Catatan tambahan (opsional)..."
+            ></textarea>
           </label>
         </div>
       </div>
@@ -165,11 +170,124 @@
 
   if (!modal) return;
 
+  const studentSelect = modal.querySelector("#manual-student-select");
+  const dateInput = document.getElementById("manual-tanggal-display");
+  const statusSelect = modal.querySelector("#manual-status-select");
+  const jamMasukInput = modal.querySelector("#manual-jam-masuk");
+  const jamPulangInput = modal.querySelector("#manual-jam-pulang");
+  const pengantarSelect = modal.querySelector("#manual-select-pengantar");
+  const pengantarLainnyaInput = modal.querySelector("#manual-input-pengantar-lainnya");
+  const penjemputSelect = modal.querySelector("#manual-select-penjemput");
+  const penjemputLainnyaInput = modal.querySelector("#manual-input-penjemput-lainnya");
+  const alasanMasukInput = modal.querySelector("#manual-alasan-masuk");
+  const alasanPulangInput = modal.querySelector("#manual-alasan-pulang");
+  const catatanTextarea = modal.querySelector("#manual-catatan");
+  const statusPulangHidden = modal.querySelector("#manual-status-pulang");
+  const dendaMenitHidden = modal.querySelector("#manual-denda-menit");
+
+  function resetFormFields() {
+    if (statusSelect) statusSelect.value = "Hadir";
+    if (jamMasukInput) jamMasukInput.value = "";
+    if (jamPulangInput) jamPulangInput.value = "";
+    if (pengantarSelect) {
+      pengantarSelect.value = "";
+      if (pengantarLainnyaInput) {
+        pengantarLainnyaInput.value = "";
+        pengantarLainnyaInput.style.display = "none";
+      }
+    }
+    if (penjemputSelect) {
+      penjemputSelect.value = "";
+      if (penjemputLainnyaInput) {
+        penjemputLainnyaInput.value = "";
+        penjemputLainnyaInput.style.display = "none";
+      }
+    }
+    if (alasanMasukInput) alasanMasukInput.value = "";
+    if (alasanPulangInput) alasanPulangInput.value = "";
+    if (catatanTextarea) catatanTextarea.value = "";
+    if (statusPulangHidden) statusPulangHidden.value = "";
+    if (dendaMenitHidden) dendaMenitHidden.value = "0";
+  }
+
+  function formatTimeForInput(val) {
+    if (!val) return "";
+    let clean = String(val).trim().replace(":", ".");
+    return clean.slice(0, 5);
+  }
+
+  function populateCombo(selectElem, customInputElem, val) {
+    if (!selectElem) return;
+    if (!val) {
+      selectElem.value = "";
+      if (customInputElem) {
+        customInputElem.value = "";
+        customInputElem.style.display = "none";
+      }
+    } else if (val === "Ayah" || val === "Ibu") {
+      selectElem.value = val;
+      if (customInputElem) {
+        customInputElem.value = "";
+        customInputElem.style.display = "none";
+      }
+    } else {
+      selectElem.value = "Lainnya";
+      if (customInputElem) {
+        customInputElem.value = val;
+        customInputElem.style.display = "block";
+      }
+    }
+  }
+
+  let fetchSeq = 0;
+  async function autofillAttendance() {
+    const studentId = studentSelect ? studentSelect.value : "";
+    const tanggal = dateInput ? dateInput.value.trim() : "";
+
+    if (!studentId || !tanggal) {
+      resetFormFields();
+      return;
+    }
+
+    const currentSeq = ++fetchSeq;
+    try {
+      const res = await fetch(`/api/admin/absensi-detail?student_id=${encodeURIComponent(studentId)}&tanggal=${encodeURIComponent(tanggal)}`);
+      if (currentSeq !== fetchSeq) return; // cegah bentrok async response
+      if (!res.ok) {
+        resetFormFields();
+        return;
+      }
+      const json = await res.json();
+      if (json.found && json.data) {
+        const d = json.data;
+        if (statusSelect) statusSelect.value = d.status || "Hadir";
+        if (jamMasukInput) jamMasukInput.value = formatTimeForInput(d.waktu);
+        if (jamPulangInput) jamPulangInput.value = formatTimeForInput(d.waktu_pulang);
+        populateCombo(pengantarSelect, pengantarLainnyaInput, d.nama_pengantar);
+        populateCombo(penjemputSelect, penjemputLainnyaInput, d.nama_penjemput);
+        if (alasanMasukInput) alasanMasukInput.value = d.alasan_tanpa_kartu || "";
+        if (alasanPulangInput) alasanPulangInput.value = d.alasan_penjemputan_tanpa_kartu || "";
+        if (catatanTextarea) catatanTextarea.value = d.catatan || "";
+        if (statusPulangHidden) statusPulangHidden.value = d.status_pulang || "";
+        if (dendaMenitHidden) dendaMenitHidden.value = d.denda_menit || "0";
+      } else {
+        resetFormFields();
+      }
+    } catch (err) {
+      console.warn("Gagal mengambil data absensi:", err);
+    }
+  }
+
   function openModal() {
     modal.showModal();
-    // Beri fokus ke dropdown anak
-    const studentSelect = modal.querySelector("#manual-student-select");
-    if (studentSelect) studentSelect.focus();
+    if (studentSelect) {
+      studentSelect.focus();
+      if (studentSelect.value) {
+        autofillAttendance();
+      } else {
+        resetFormFields();
+      }
+    }
   }
 
   function closeModal() {
@@ -208,6 +326,7 @@
             const displayInput = document.getElementById("manual-tanggal-display");
             if (displayInput) {
               displayInput.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
+              autofillAttendance();
             }
           }
         }
@@ -231,8 +350,20 @@
 
   if (calBtn) calBtn.addEventListener("click", openCalendarPicker);
 
+  // Auto-fill saat pemilihan anak atau tanggal berubah
+  if (studentSelect) {
+    studentSelect.addEventListener("change", autofillAttendance);
+  }
+  if (dateInput) {
+    dateInput.addEventListener("change", autofillAttendance);
+    dateInput.addEventListener("blur", () => {
+      if (dateInput.value.trim().length === 10) {
+        autofillAttendance();
+      }
+    });
+  }
+
   // Format Auto-Slash DD/MM/YYYY saat mengetik
-  const dateInput = document.getElementById("manual-tanggal-display");
   if (dateInput) {
     dateInput.addEventListener("input", (e) => {
       let val = e.target.value.replace(/[^\d]/g, "");
@@ -242,6 +373,9 @@
         val = val.slice(0, 2) + "/" + val.slice(2, 4) + "/" + val.slice(4, 8);
       }
       e.target.value = val;
+      if (val.length === 10) {
+        autofillAttendance();
+      }
     });
   }
 
@@ -285,4 +419,3 @@
   });
 })();
 </script>
-

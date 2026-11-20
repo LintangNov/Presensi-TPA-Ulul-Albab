@@ -9,7 +9,10 @@
 
 {% if not simulator_enabled %}
 <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 10px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; color: #9b2c2c;">
-  <p style="margin: 0 0 0.5rem 0; font-weight: 700;">⚠️ Simulasi Tidak Tersedia</p>
+  <p style="margin: 0 0 0.5rem 0; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+    <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    Simulasi Tidak Tersedia
+  </p>
   <p style="margin: 0; font-size: 0.9rem;">Simulasi RFID hanya aktif saat semua kondisi berikut terpenuhi:</p>
   <ul style="margin: 0.5rem 0 0 0; padding-left: 1.2rem; font-size: 0.9rem;">
     <li>Aplikasi berjalan dari <strong>source code</strong> (bukan file <code>.exe</code> build).</li>
@@ -27,7 +30,10 @@
     Simulasi RFID aktif. Anda dapat mendaftarkan kartu baru dan mensimulasikan tap absensi.
   </div>
   <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-    <span class="badge success" style="font-size: 0.9rem;">✓ Simulasi Aktif</span>
+    <span class="badge success" style="font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+      <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+      Simulasi Aktif
+    </span>
     <span class="badge info" style="font-size: 0.9rem;">Mode: Source Code (Non-Frozen)</span>
     <span class="badge warning" style="font-size: 0.9rem;">Hardware: Tidak Terdeteksi</span>
   </div>

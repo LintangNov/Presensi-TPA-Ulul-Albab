@@ -19,14 +19,21 @@ ENV/
 # Application Logs
 logs/
 
-# Database files & backups (Data sensitif santri & absensi)
+# Database files & backups (Data sensitif anak & absensi)
 data/*.db
 data/*.db-wal
 data/*.db-shm
 data/*.db.tmp
 data/backup/
 
+# Screenshots & test scripts
+screenshots/
+scripts/
+
 # File Aider & Scratch
 .aider*
 .bot_uploads/
 note.txt
+
+
+DESIGN.md

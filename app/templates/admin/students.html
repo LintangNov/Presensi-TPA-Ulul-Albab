@@ -2,26 +2,70 @@
 
 {% block styles %}
 <style>
-  /* Styling Eksplisit untuk Modal Daftarkan Kartu RFID & Anti-Overlap */
+  /* Unslop Styling untuk Modal Daftarkan Kartu RFID (Forest Teal & Concentric Clean) */
+  #register-dialog .modal-student-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    box-sizing: border-box;
+  }
+
+  #register-dialog .student-info-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  #register-dialog .student-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text);
+    text-transform: capitalize;
+  }
+
+  #register-dialog .student-meta {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  #register-dialog .student-card-note {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    padding-top: 0.35rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    line-height: 1.3;
+  }
+
+  #register-dialog .student-card-note strong {
+    color: var(--text);
+  }
+
   #register-dialog .card-slot-box {
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    border: 2px solid #cbd5e0 !important;
-    border-radius: 10px !important;
-    padding: 0.75rem 0.85rem !important;
-    min-height: 76px !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 0.65rem 0.8rem !important;
+    min-height: 68px !important;
     margin: 0 !important;
-    background: #ffffff !important;
+    background: var(--surface) !important;
     cursor: pointer !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition: border-color 0.15s ease, background-color 0.15s ease !important;
     user-select: none !important;
     position: relative !important;
   }
 
-  /* Hilangkan lingkaran radio button bawaan secara mutlak */
+  /* Hilangkan radio input bawaan */
   #register-dialog .card-slot-box input[type="radio"] {
     display: none !important;
     opacity: 0 !important;
@@ -33,76 +77,152 @@
   }
 
   #register-dialog .card-slot-box:hover {
-    border-color: #a0aec0 !important;
-    background: #f8fafc !important;
+    border-color: #94a3b8 !important;
+    background: var(--bg) !important;
   }
 
-  /* Efek visual langsung pada rounded card saat kartu dipilih */
+  /* Status kartu slot aktif: aksen Forest Teal tenang tanpa efek glow */
   #register-dialog .card-slot-box.is-selected,
   #register-dialog .card-slot-box:has(input[type="radio"]:checked) {
-    border-color: #3182ce !important;
-    background: #ebf8ff !important;
-    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.22), 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    border-color: var(--primary) !important;
+    background: rgba(15, 118, 110, 0.04) !important;
+    box-shadow: none !important;
   }
 
   #register-dialog .card-slot-box .slot-title {
-    font-size: 0.92rem !important;
-    font-weight: 700 !important;
-    color: #2d3748 !important;
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+    color: var(--text) !important;
     margin: 0 !important;
     line-height: 1.2 !important;
-    transition: color 0.2s ease !important;
+    transition: color 0.15s ease !important;
   }
 
   #register-dialog .card-slot-box.is-selected .slot-title,
   #register-dialog .card-slot-box:has(input[type="radio"]:checked) .slot-title {
-    color: #2b6cb0 !important;
+    color: var(--primary) !important;
   }
 
   #register-dialog .card-slot-box .slot-status {
-    font-size: 0.82rem !important;
-    color: #718096 !important;
+    font-size: 0.8rem !important;
+    color: var(--text-muted) !important;
     margin: 0 !important;
-    margin-top: 0.35rem !important;
+    margin-top: 0.25rem !important;
   }
 
+  #register-dialog .slot-uid-code {
+    font-family: var(--font-mono, monospace);
+    font-variant-numeric: tabular-nums;
+    color: var(--primary);
+    font-weight: 600;
+    background: rgba(15, 118, 110, 0.08);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid rgba(15, 118, 110, 0.2);
+    display: inline-block;
+    font-size: 0.82rem;
+  }
+
+  #register-dialog .slot-empty-text {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  /* Tombol Hapus pada slot kartu: hanya tampil jika kartu terdaftar */
   #register-dialog .btn-slot-delete {
-    margin: 0 !important;
-    padding: 0.15rem 0.5rem !important;
-    font-size: 0.72rem !important;
-    font-weight: 600 !important;
-    line-height: 1.2 !important;
-    height: auto !important;
-    min-height: auto !important;
-    width: auto !important;
-    border-radius: 4px !important;
-    border: 1px solid #feb2b2 !important;
-    background: #fff5f5 !important;
-    color: #c53030 !important;
-    cursor: pointer !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    transition: all 0.15s ease !important;
+    margin: 0;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    line-height: 1.2;
+    height: auto;
+    min-height: auto;
+    width: auto;
+    border-radius: 4px;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, color 0.15s ease;
   }
 
   #register-dialog .btn-slot-delete:hover {
-    background: #feb2b2 !important;
-    color: #9b2c2c !important;
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  /* Opsi 1: Kelompok Input RFID scan langsung */
+  #register-dialog .rfid-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+  }
+
+  #register-dialog .rfid-input-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.82rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  #register-dialog .rfid-input-label {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.82rem;
+  }
+
+  #register-dialog .rfid-status-text {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    transition: color 0.15s ease;
+  }
+
+  #register-dialog .rfid-scan-input {
+    width: 100%;
+    text-align: center;
+    font-family: var(--font-mono, monospace);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    height: 42px;
+    min-height: 42px;
+    margin: 0;
+    padding: 0 0.75rem;
+    box-sizing: border-box;
+    background: var(--surface);
+    color: var(--text);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  #register-dialog .rfid-scan-input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15);
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+<div
+  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
   <div>
     <h2 style="margin: 0;">Data Anak TPA</h2>
-    <p style="margin: 0; color: #718096; font-size: 0.95rem;">Kelola data anak, paket penitipan (Half Day / Full Day), kartu RFID, dan status aktif.</p>
+    <p style="margin: 0; color: #718096; font-size: 0.95rem;">Kelola data anak, paket penitipan (Half Day / Full Day),
+      kartu RFID, dan status aktif.</p>
   </div>
 </div>
 
 <form method="get" action="/admin/anak" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
-  <input name="q" value="{{ search }}" placeholder="Cari nama atau nomor urut anak..." style="max-width: 320px;">
+  <input name="q" value="{{ search }}" placeholder="Cari nama atau nomor urut..." style="max-width: 320px;">
   <button type="submit" class="btn-sm">Cari</button>
   {% if search %}
   <a href="/admin/anak"><button type="button" class="btn-sm btn-secondary">Reset</button></a>
@@ -111,7 +231,8 @@
 
 <details id="tambah-anak" style="margin-bottom: 1.5rem;" open>
   <summary style="cursor: pointer; font-weight: 700;">Tambah Anak Baru</summary>
-  <form method="post" action="/admin/anak" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+  <form method="post" action="/admin/anak"
+    style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
     <label>Nama Lengkap <input name="nama" placeholder="Contoh: Muhammad Andi" required></label>
     <label>Nomor Urut / Absen <input name="nomor_urut" type="number" placeholder="Contoh: 1"></label>
     <label>Paket Penitipan
@@ -154,24 +275,30 @@
       <td id="student-cards-cell-{{ student.id }}">
         <div style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem;">
           <div>
-            <span style="font-size: 0.75rem; color: #718096; font-weight: 600;">Kartu 1:</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Kartu 1:</span>
             {% if student.card_1 %}
-              <code style="font-weight: 600; color: #2b6cb0;">{{ student.card_1.rfid_uid }}</code>
-              <span style="font-size: 0.75rem; background: #ebf8ff; color: #2b6cb0; padding: 0.1rem 0.35rem; border-radius: 4px;">No: #{{ student.card_1.nomor_kartu_custom or student.nomor_urut or '-' }}</span>
+            <code style="font-weight: 600; color: var(--primary, #0f766e); font-family: var(--font-mono); font-variant-numeric: tabular-nums;">{{ student.card_1.rfid_uid }}</code>
+            <span
+              style="font-size: 0.75rem; background: rgba(15, 118, 110, 0.08); color: var(--primary, #0f766e); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(15, 118, 110, 0.2);">No:
+              #{{ student.card_1.nomor_kartu_custom or student.nomor_urut or '-' }}</span>
             {% elif student.rfid_uid and not student.card_2 %}
-              <code style="font-weight: 600; color: #2b6cb0;">{{ student.rfid_uid }}</code>
-              <span style="font-size: 0.75rem; background: #ebf8ff; color: #2b6cb0; padding: 0.1rem 0.35rem; border-radius: 4px;">No: #{{ student.nomor_urut or '-' }}</span>
+            <code style="font-weight: 600; color: var(--primary, #0f766e); font-family: var(--font-mono); font-variant-numeric: tabular-nums;">{{ student.rfid_uid }}</code>
+            <span
+              style="font-size: 0.75rem; background: rgba(15, 118, 110, 0.08); color: var(--primary, #0f766e); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(15, 118, 110, 0.2);">No:
+              #{{ student.nomor_urut or '-' }}</span>
             {% else %}
-              <span style="color: #a0aec0; font-size: 0.8rem; font-style: italic;">Belum ada</span>
+            <span style="color: var(--text-muted); font-size: 0.8rem;">Belum ada</span>
             {% endif %}
           </div>
           <div>
-            <span style="font-size: 0.75rem; color: #718096; font-weight: 600;">Kartu 2:</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Kartu 2:</span>
             {% if student.card_2 %}
-              <code style="font-weight: 600; color: #2b6cb0;">{{ student.card_2.rfid_uid }}</code>
-              <span style="font-size: 0.75rem; background: #ebf8ff; color: #2b6cb0; padding: 0.1rem 0.35rem; border-radius: 4px;">No: #{{ student.card_2.nomor_kartu_custom or student.nomor_urut or '-' }}</span>
+            <code style="font-weight: 600; color: var(--primary, #0f766e); font-family: var(--font-mono); font-variant-numeric: tabular-nums;">{{ student.card_2.rfid_uid }}</code>
+            <span
+              style="font-size: 0.75rem; background: rgba(15, 118, 110, 0.08); color: var(--primary, #0f766e); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(15, 118, 110, 0.2);">No:
+              #{{ student.card_2.nomor_kartu_custom or student.nomor_urut or '-' }}</span>
             {% else %}
-              <span style="color: #a0aec0; font-size: 0.8rem; font-style: italic;">Belum ada</span>
+            <span style="color: var(--text-muted); font-size: 0.8rem;">Belum ada</span>
             {% endif %}
           </div>
         </div>
@@ -183,36 +310,34 @@
       </td>
       <td>
         <div class="btn-group">
-          <button 
-            type="button" 
-            class="btn-sm" 
-            id="btn-register-student-{{ student.id }}"
-            data-register-student="{{ student.id }}" 
-            data-register-name="{{ student.nama }}"
+          <button type="button" class="btn-sm" id="btn-register-student-{{ student.id }}"
+            data-register-student="{{ student.id }}" data-register-name="{{ student.nama }}"
             data-register-no="{{ student.nomor_urut or '-' }}"
             data-register-paket="{{ 'Paket A (Half Day)' if student.paket == 'A' else 'Paket B (Full Day)' }}"
             data-card1-uid="{% if student.card_1 %}{{ student.card_1.rfid_uid }}{% elif student.rfid_uid and not student.card_2 %}{{ student.rfid_uid }}{% endif %}"
             data-card2-uid="{% if student.card_2 %}{{ student.card_2.rfid_uid }}{% endif %}"
-            title="Daftarkan / Ganti Kartu RFID (2 Slot)"
-          >
+            title="Daftarkan / Ganti Kartu RFID (2 Slot)">
             Daftarkan Kartu
           </button>
 
           <details style="display: inline-block; margin: 0; padding: 0; border: none; background: transparent;">
             <summary class="btn-sm btn-secondary" style="list-style: none; cursor: pointer;">Edit</summary>
-            <div style="position: absolute; right: 2rem; background: #fff; border: 1px solid #cbd5e0; border-radius: 10px; padding: 1.25rem; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 50; width: 320px;">
+            <div
+              style="position: absolute; right: 2rem; background: #fff; border: 1px solid #cbd5e0; border-radius: 10px; padding: 1.25rem; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 50; width: 320px;">
               <h4 style="margin: 0 0 1rem 0; font-size: 1rem;">Edit Data Anak: {{ student.nama }}</h4>
-              <form method="post" action="/admin/anak/{{ student.id }}" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <form method="post" action="/admin/anak/{{ student.id }}"
+                style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <label>Nama <input name="nama" value="{{ student.nama }}" required></label>
                 <label>Nomor Urut <input name="nomor_urut" type="number" value="{{ student.nomor_urut or '' }}"></label>
                 <label>Paket
                   <select name="paket">
-                    <option value="A" {% if student.paket == 'A' %}selected{% endif %}>Paket A (Half Day)</option>
-                    <option value="B" {% if student.paket == 'B' %}selected{% endif %}>Paket B (Full Day)</option>
+                    <option value="A" {% if student.paket=='A' %}selected{% endif %}>Paket A (Half Day)</option>
+                    <option value="B" {% if student.paket=='B' %}selected{% endif %}>Paket B (Full Day)</option>
                   </select>
                 </label>
                 {% for field in fields %}
-                <label>{{ field.field_label }} <input name="{{ field.field_key }}" value="{{ student.extra_data.get(field.field_key, '') }}"></label>
+                <label>{{ field.field_label }} <input name="{{ field.field_key }}"
+                    value="{{ student.extra_data.get(field.field_key, '') }}"></label>
                 {% endfor %}
                 <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
                   <button type="submit" class="btn-sm">Simpan</button>
@@ -222,18 +347,14 @@
           </details>
 
           <form method="post" action="/admin/anak/{{ student.id }}/aktif" style="margin: 0; display: inline;">
-            <button type="submit" class="btn-sm btn-secondary" title="{{ 'Nonaktifkan anak' if student.aktif else 'Aktifkan anak' }}">
+            <button type="submit" class="btn-sm btn-secondary"
+              title="{{ 'Nonaktifkan anak' if student.aktif else 'Aktifkan anak' }}">
               {{ "Nonaktifkan" if student.aktif else "Aktifkan" }}
             </button>
           </form>
 
-          <button 
-            type="button" 
-            class="btn-sm btn-danger" 
-            data-delete-student="{{ student.id }}" 
-            data-delete-name="{{ student.nama }}"
-            title="Hapus Data Anak"
-          >
+          <button type="button" class="btn-sm btn-danger" data-delete-student="{{ student.id }}"
+            data-delete-name="{{ student.nama }}" title="Hapus Data Anak">
             Hapus
           </button>
         </div>
@@ -243,37 +364,40 @@
   </tbody>
 </table>
 
-  <!-- Pagination Data Anak -->
-  {% if total_pages and total_pages > 1 %}
-  <nav class="pagination" aria-label="Navigasi halaman anak" style="margin-top: 1rem; margin-bottom: 1.5rem;">
-    <span class="pagination-info">
-      Menampilkan {{ ((page - 1) * per_page) + 1 }}–{{ [page * per_page, total_students] | min }} dari {{ total_students }} anak
-    </span>
-    <div class="pagination-links">
-      {% if page > 1 %}
-      <a class="pagination-btn" href="/admin/anak?page={{ page - 1 }}{% if search %}&q={{ search }}{% endif %}" title="Halaman sebelumnya">&laquo; Sebelumnya</a>
-      {% else %}
-      <span class="pagination-btn disabled">&laquo; Sebelumnya</span>
-      {% endif %}
+<!-- Pagination Data Anak -->
+{% if total_pages and total_pages > 1 %}
+<nav class="pagination" aria-label="Navigasi halaman anak" style="margin-top: 1rem; margin-bottom: 1.5rem;">
+  <span class="pagination-info">
+    Menampilkan {{ ((page - 1) * per_page) + 1 }}–{{ [page * per_page, total_students] | min }} dari {{ total_students
+    }} anak
+  </span>
+  <div class="pagination-links">
+    {% if page > 1 %}
+    <a class="pagination-btn" href="/admin/anak?page={{ page - 1 }}{% if search %}&q={{ search }}{% endif %}"
+      title="Halaman sebelumnya">&laquo; Sebelumnya</a>
+    {% else %}
+    <span class="pagination-btn disabled">&laquo; Sebelumnya</span>
+    {% endif %}
 
-      {% for p in range(1, total_pages + 1) %}
-        {% if p == page %}
-        <span class="pagination-btn active" aria-current="page">{{ p }}</span>
-        {% elif p == 1 or p == total_pages or (p >= (page - 1) and p <= (page + 1)) %}
-        <a class="pagination-btn" href="/admin/anak?page={{ p }}{% if search %}&q={{ search }}{% endif %}">{{ p }}</a>
-        {% elif p == (page - 2) or p == (page + 2) %}
-        <span class="pagination-ellipsis">&hellip;</span>
-        {% endif %}
+    {% for p in range(1, total_pages + 1) %}
+    {% if p == page %}
+    <span class="pagination-btn active" aria-current="page">{{ p }}</span>
+    {% elif p == 1 or p == total_pages or (p >= (page - 1) and p <= (page + 1)) %} <a class="pagination-btn"
+      href="/admin/anak?page={{ p }}{% if search %}&q={{ search }}{% endif %}">{{ p }}</a>
+      {% elif p == (page - 2) or p == (page + 2) %}
+      <span class="pagination-ellipsis">&hellip;</span>
+      {% endif %}
       {% endfor %}
 
-      {% if page < total_pages %}
-      <a class="pagination-btn" href="/admin/anak?page={{ page + 1 }}{% if search %}&q={{ search }}{% endif %}" title="Halaman berikutnya">Berikutnya &raquo;</a>
-      {% else %}
-      <span class="pagination-btn disabled">Berikutnya &raquo;</span>
-      {% endif %}
-    </div>
-  </nav>
-  {% endif %}
+      {% if page < total_pages %} <a class="pagination-btn"
+        href="/admin/anak?page={{ page + 1 }}{% if search %}&q={{ search }}{% endif %}" title="Halaman berikutnya">
+        Berikutnya &raquo;</a>
+        {% else %}
+        <span class="pagination-btn disabled">Berikutnya &raquo;</span>
+        {% endif %}
+  </div>
+</nav>
+{% endif %}
 {% else %}
 <p class="empty-table-notice">Data anak belum ada. Tambahkan anak baru di atas untuk mulai mendaftarkan kartu RFID.</p>
 {% endif %}
@@ -282,74 +406,66 @@
 <dialog id="register-dialog">
   <div class="modal-card">
     <div class="modal-header">
-      <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text);">Daftarkan Kartu RFID</h3>
+      <h3 style="margin: 0; font-size: 1.15rem; font-weight: 600; color: var(--text);">Daftarkan Kartu RFID</h3>
       <button type="button" class="modal-close-btn" id="btn-close-register" aria-label="Tutup Dialog">✕</button>
     </div>
 
-    <div class="register-modal-body">
-      <div class="modal-student-badge" style="padding: 0.6rem 0.85rem;">
-        <p id="register-student-name" class="modal-student-name" style="font-size: 1.15rem;"></p>
-        <p id="register-student-meta" class="modal-student-meta"></p>
+    <div class="register-modal-body" style="display: flex; flex-direction: column; gap: 0.85rem;">
+      <!-- Opsi A: Wadah Informasi Anak Terintegrasi Bersih -->
+      <div class="modal-student-card">
+        <div class="student-info-main">
+          <span id="register-student-name" class="student-name"></span>
+          <span id="register-student-meta" class="student-meta"></span>
+        </div>
+        <div class="student-card-note">
+          Nomor fisik kartu otomatis disamakan dengan <strong>No. Absen (<span id="register-card-custom-no">-</span>)</strong>
+        </div>
       </div>
 
-      <!-- Info Nomor Kartu Custom Sesuai Nomor Absen -->
-      <div style="background: #ebf8ff; border: 1px solid #bee3f8; border-radius: var(--radius-sm); padding: 0.45rem 0.75rem; font-size: 0.82rem; color: #2b6cb0; display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
-        <span>💡</span>
-        <span>Nomor kartu fisik otomatis disamakan dengan <strong>No. Absen (<span id="register-card-custom-no">-</span>)</strong> untuk kedua kartu.</span>
-      </div>
-
-      <!-- Pilihan Slot Kartu 1 atau Kartu 2 (Rounded Card dengan Efek Seleksi Mandiri Tanpa Radio Circle) -->
+      <!-- Pilihan Slot Kartu 1 atau Kartu 2 (Dua Kartu Bersebelahan) -->
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; width: 100%; box-sizing: border-box;">
         <label class="card-slot-box is-selected" id="slot1-box">
           <input type="radio" name="card_slot" value="1" checked style="display: none !important;">
-          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0.35rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0.25rem;">
             <strong class="slot-title">Kartu 1</strong>
             <button type="button" id="btn-del-card1" class="btn-slot-delete" style="display: none;">Hapus</button>
           </div>
           <div id="slot1-status" class="slot-status">
-            <span style="color: #a0aec0; font-size: 0.8rem; font-style: italic;">Belum ada</span>
+            <span class="slot-empty-text">Belum terdaftar</span>
           </div>
         </label>
 
         <label class="card-slot-box" id="slot2-box">
           <input type="radio" name="card_slot" value="2" style="display: none !important;">
-          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0.35rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0.25rem;">
             <strong class="slot-title">Kartu 2</strong>
             <button type="button" id="btn-del-card2" class="btn-slot-delete" style="display: none;">Hapus</button>
           </div>
           <div id="slot2-status" class="slot-status">
-            <span style="color: #a0aec0; font-size: 0.8rem; font-style: italic;">Belum ada</span>
+            <span class="slot-empty-text">Belum terdaftar</span>
           </div>
         </label>
       </div>
 
-      <div class="rfid-scan-indicator" style="margin: 0.35rem 0; display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
-        <div class="rfid-pulse-icon" style="width: 44px; height: 44px; border-radius: 50%; background: #ebf8ff; color: #3182ce; display: flex; align-items: center; justify-content: center;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-            <path d="M7 15a4 4 0 0 1 0-6"></path>
-            <path d="M10 15a7 7 0 0 1 0-6"></path>
-          </svg>
+      <!-- Opsi 1: Input Langsung & Tenang -->
+      <div class="rfid-input-group">
+        <div class="rfid-input-header">
+          <label for="register-uid" class="rfid-input-label">Tempelkan kartu pada reader RFID:</label>
+          <span id="register-message" class="rfid-status-text">Siap scan kartu</span>
         </div>
-        <p id="register-message" style="margin: 0; font-size: 0.85rem; color: #4a5568; text-align: center; font-weight: 500;">
-          Pilih slot di atas, lalu tempelkan kartu RFID pada reader USB...
-        </p>
-      </div>
-
-      <div>
         <input 
           id="register-uid" 
           autocomplete="off" 
           aria-label="Input scan RFID" 
-          placeholder="Menunggu scan kartu..." 
-          style="width: 100%; text-align: center; font-weight: 700; letter-spacing: 0.05em; border: 2px solid var(--border); border-radius: var(--radius-sm); font-size: 1rem; height: 42px; min-height: 42px; margin: 0; box-sizing: border-box;"
+          placeholder="Menunggu tap kartu..." 
+          class="rfid-scan-input"
         >
       </div>
     </div>
 
     <!-- Pinned Footer Action Bar -->
-    <div class="modal-actions-bar" style="margin-top: 0.25rem; padding-top: 0.6rem;">
-      <button type="button" id="btn-cancel-register" class="btn-sm btn-secondary" style="margin: 0; height: 36px; min-height: 36px;">Tutup</button>
+    <div class="modal-actions-bar" style="margin-top: 0.5rem; padding-top: 0.6rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end;">
+      <button type="button" id="btn-cancel-register" class="btn-sm btn-secondary" style="margin: 0; height: 36px; min-height: 36px; padding: 0 1rem;">Tutup</button>
     </div>
   </div>
 </dialog>
@@ -363,13 +479,23 @@
     </div>
     <div style="display: flex; flex-direction: column; gap: 0.75rem;">
       <p style="margin: 0; color: #4a5568;">
-        Apakah Anda yakin ingin menghapus data anak <strong id="delete-student-name-text" style="color: #1a202c;"></strong>?
+        Apakah Anda yakin ingin menghapus data anak <strong id="delete-student-name-text"
+          style="color: #1a202c;"></strong>?
       </p>
-      <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; padding: 0.75rem; font-size: 0.85rem; color: #9b2c2c;">
-        ⚠️ <strong>Perhatian:</strong> Seluruh riwayat absensi dan log tap terkait anak ini akan terhapus secara permanen.
+      <div
+        style="background: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: 8px; padding: 0.75rem; font-size: 0.85rem; color: var(--warning-text); display: flex; align-items: center; gap: 0.4rem;">
+        <svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <span><strong>Perhatian:</strong> Seluruh riwayat absensi dan log tap terkait anak ini akan terhapus secara
+          permanen.</span>
       </div>
     </div>
-    <form id="delete-student-form" method="post" style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+    <form id="delete-student-form" method="post"
+      style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
       <button type="button" id="btn-cancel-delete" class="btn-sm btn-secondary">Batal</button>
       <button type="submit" class="btn-sm btn-danger">Ya, Hapus Data Anak</button>
     </form>
@@ -394,18 +520,18 @@
 
   function updateSlotView() {
     if (currentCard1Uid) {
-      slot1Status.innerHTML = `<code style="color: #2b6cb0; font-weight: 700; background: #ebf8ff; padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid #bee3f8; display: inline-block;">${currentCard1Uid}</code>`;
+      slot1Status.innerHTML = `<code class="slot-uid-code">${currentCard1Uid}</code>`;
       btnDelCard1.style.display = "inline-flex";
     } else {
-      slot1Status.innerHTML = `<span style="color: #a0aec0; font-size: 0.8rem; font-style: italic;">Belum ada</span>`;
+      slot1Status.innerHTML = `<span class="slot-empty-text">Belum terdaftar</span>`;
       btnDelCard1.style.display = "none";
     }
 
     if (currentCard2Uid) {
-      slot2Status.innerHTML = `<code style="color: #2b6cb0; font-weight: 700; background: #ebf8ff; padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid #bee3f8; display: inline-block;">${currentCard2Uid}</code>`;
+      slot2Status.innerHTML = `<code class="slot-uid-code">${currentCard2Uid}</code>`;
       btnDelCard2.style.display = "inline-flex";
     } else {
-      slot2Status.innerHTML = `<span style="color: #a0aec0; font-size: 0.8rem; font-style: italic;">Belum ada</span>`;
+      slot2Status.innerHTML = `<span class="slot-empty-text">Belum terdaftar</span>`;
       btnDelCard2.style.display = "none";
     }
   }
@@ -460,8 +586,8 @@
       syncCardSlotSelection();
 
       registerUid.value = "";
-      registerMessage.textContent = "Pilih slot di atas, lalu tempelkan kartu RFID pada reader USB...";
-      registerMessage.style.color = "#4a5568";
+      registerMessage.textContent = "Siap scan kartu";
+      registerMessage.style.color = "var(--text-muted)";
       registerDialog.showModal();
       registerUid.focus();
     });
@@ -497,21 +623,21 @@
 
     const noText = customNo ? `No: #${customNo}` : "";
     const card1Html = card1Uid
-      ? `<code style="font-weight: 600; color: #2b6cb0;">${card1Uid}</code> <span style="font-size: 0.75rem; background: #ebf8ff; color: #2b6cb0; padding: 0.1rem 0.35rem; border-radius: 4px;">${noText}</span>`
-      : `<span style="color: #a0aec0; font-size: 0.8rem; font-style: italic;">Belum ada</span>`;
+      ? `<code class="slot-uid-code">${card1Uid}</code> <span style="font-size: 0.75rem; background: rgba(15, 118, 110, 0.08); color: var(--primary, #0f766e); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(15, 118, 110, 0.2);">No: #${customNo || '-'}</span>`
+      : `<span style="color: var(--text-muted); font-size: 0.8rem;">Belum ada</span>`;
 
     const card2Html = card2Uid
-      ? `<code style="font-weight: 600; color: #2b6cb0;">${card2Uid}</code> <span style="font-size: 0.75rem; background: #ebf8ff; color: #2b6cb0; padding: 0.1rem 0.35rem; border-radius: 4px;">${noText}</span>`
-      : `<span style="color: #a0aec0; font-size: 0.8rem; font-style: italic;">Belum ada</span>`;
+      ? `<code class="slot-uid-code">${card2Uid}</code> <span style="font-size: 0.75rem; background: rgba(15, 118, 110, 0.08); color: var(--primary, #0f766e); padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid rgba(15, 118, 110, 0.2);">No: #${customNo || '-'}</span>`
+      : `<span style="color: var(--text-muted); font-size: 0.8rem;">Belum ada</span>`;
 
     cell.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.85rem;">
         <div>
-          <span style="font-size: 0.75rem; color: #718096; font-weight: 600;">Kartu 1:</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Kartu 1:</span>
           ${card1Html}
         </div>
         <div>
-          <span style="font-size: 0.75rem; color: #718096; font-weight: 600;">Kartu 2:</span>
+          <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Kartu 2:</span>
           ${card2Html}
         </div>
       </div>
@@ -530,8 +656,8 @@
       updateSlotView();
       const noAbsen = document.querySelector(`#btn-register-student-${registerStudentId}`)?.dataset.registerNo || "";
       updateTableRowCards(registerStudentId, currentCard1Uid, currentCard2Uid, noAbsen);
-      registerMessage.textContent = "✓ Kartu 1 berhasil dihapus.";
-      registerMessage.style.color = "#276749";
+      registerMessage.textContent = "Kartu 1 berhasil dihapus";
+      registerMessage.style.color = "var(--primary, #0f766e)";
       registerUid.focus();
     } catch (err) {
       registerMessage.textContent = err.message;
@@ -551,8 +677,8 @@
       updateSlotView();
       const noAbsen = document.querySelector(`#btn-register-student-${registerStudentId}`)?.dataset.registerNo || "";
       updateTableRowCards(registerStudentId, currentCard1Uid, currentCard2Uid, noAbsen);
-      registerMessage.textContent = "✓ Kartu 2 berhasil dihapus.";
-      registerMessage.style.color = "#276749";
+      registerMessage.textContent = "Kartu 2 berhasil dihapus";
+      registerMessage.style.color = "var(--primary, #0f766e)";
       registerUid.focus();
     } catch (err) {
       registerMessage.textContent = err.message;
@@ -570,7 +696,8 @@
     const selectedSlotEl = document.querySelector('input[name="card_slot"]:checked');
     const slot = selectedSlotEl ? parseInt(selectedSlotEl.value, 10) : 1;
 
-    registerMessage.textContent = `Memproses pendaftaran Kartu ${slot}...`;
+    registerMessage.textContent = `Mendaftarkan Kartu ${slot}...`;
+    registerMessage.style.color = "var(--text-muted)";
     try {
       const response = await fetch(`/api/admin/anak/${registerStudentId}/daftar-kartu`, {
         method: "POST",
@@ -578,8 +705,8 @@
         body: JSON.stringify({ uid, slot }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.detail || "Kartu tidak dapat didaftarkan.");
-      
+      if (!response.ok) throw new Error(result.detail || "Kartu tidak dapat didaftarkan");
+
       if (slot === 1) {
         currentCard1Uid = result.uid;
         // Jika slot 2 masih kosong, otomatis alihkan pilihan radio ke Kartu 2 untuk kartu berikutnya
@@ -595,8 +722,8 @@
       updateSlotView();
       updateTableRowCards(registerStudentId, currentCard1Uid, currentCard2Uid, result.nomor_kartu_custom || "");
 
-      registerMessage.textContent = `[OK] Kartu ${slot} (${result.uid}) berhasil dipasangkan ke ${result.nama}! Siap menerima kartu berikutnya...`;
-      registerMessage.style.color = "#276749";
+      registerMessage.textContent = `Kartu ${slot} (${result.uid}) berhasil didaftarkan untuk ${result.nama}`;
+      registerMessage.style.color = "var(--primary, #0f766e)";
       registerUid.value = "";
       registerUid.focus();
     } catch (error) {

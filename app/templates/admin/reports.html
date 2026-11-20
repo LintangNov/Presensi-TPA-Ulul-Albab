@@ -71,29 +71,35 @@
       <td>
         {{ row.nama_pengantar or "-" }}
         {% if row.alasan_tanpa_kartu %}
-          <div style="font-size: 0.75rem; color: #718096;" title="Alasan masuk tanpa kartu">
-            ℹ️ {{ row.alasan_tanpa_kartu }}
+          <div style="font-size: 0.75rem; color: #718096; display: inline-flex; align-items: center; gap: 0.25rem;" title="Alasan masuk tanpa kartu">
+            <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> {{ row.alasan_tanpa_kartu }}
           </div>
         {% endif %}
       </td>
       <td>
         {{ row.nama_penjemput or "-" }}
         {% if row.alasan_penjemputan_tanpa_kartu %}
-          <div style="font-size: 0.75rem; color: #718096;" title="Alasan penjemputan tanpa kartu">
-            ℹ️ {{ row.alasan_penjemputan_tanpa_kartu }}
+          <div style="font-size: 0.75rem; color: #718096; display: inline-flex; align-items: center; gap: 0.25rem;" title="Alasan penjemputan tanpa kartu">
+            <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> {{ row.alasan_penjemputan_tanpa_kartu }}
           </div>
         {% elif row.alasan_tanpa_kartu and not row.alasan_penjemputan_tanpa_kartu and row.waktu_pulang and not row.nama_pengantar %}
-          <div style="font-size: 0.75rem; color: #718096;" title="Alasan penjemputan tanpa kartu">
-            ℹ️ {{ row.alasan_tanpa_kartu }}
+          <div style="font-size: 0.75rem; color: #718096; display: inline-flex; align-items: center; gap: 0.25rem;" title="Alasan penjemputan tanpa kartu">
+            <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> {{ row.alasan_tanpa_kartu }}
           </div>
         {% endif %}
       </td>
       <td>
         {% if row.status_pulang %}
           {% if "Denda" in row.status_pulang %}
-            <span class="badge error" style="font-size: 0.8rem;">⚠️ {{ row.status_pulang }} ({{ row.denda_menit }} mnt)</span>
+            <span class="badge error" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+              <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              {{ row.status_pulang }} ({{ row.denda_menit }} mnt)
+            </span>
           {% else %}
-            <span class="badge success" style="font-size: 0.8rem;">✓ {{ row.status_pulang }}</span>
+            <span class="badge success" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+              <svg class="ui-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              {{ row.status_pulang }}
+            </span>
           {% endif %}
         {% else %}
           -

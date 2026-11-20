@@ -203,8 +203,8 @@
         setScannerActive(e.target.checked);
         showAdminToast(
           e.target.checked
-            ? "Mode Scanner DIAKTIFKAN"
-            : "Mode Scanner DINONAKTIFKAN",
+            ? "Mode scanner aktif"
+            : "Mode scanner nonaktif",
           e.target.checked ? "success" : "info"
         );
       });
@@ -221,8 +221,8 @@
         setScannerActive(next);
         showAdminToast(
           next
-            ? "Mode Scanner DIAKTIFKAN. Scanner siap menerima tap kartu."
-            : "Mode Scanner DINONAKTIFKAN. Formulir dapat diedit.",
+            ? "Mode scanner aktif. Siap menerima tap kartu."
+            : "Mode scanner nonaktif. Formulir dapat diedit.",
           next ? "success" : "info"
         );
       });

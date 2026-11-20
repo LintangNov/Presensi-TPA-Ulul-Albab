@@ -51,8 +51,8 @@
           style="margin-top: 0.35rem; width: 100%; box-sizing: border-box;">
       </label>
       <button type="submit" class="btn-primary"
-        style="margin-top: 0.75rem; margin-bottom: 0; width: 100%; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
-        🔍 Validasi dan Pratinjau Data
+        style="margin-top: 0.75rem; margin-bottom: 0; width: auto; min-width: 240px; align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Validasi dan Pratinjau Data
       </button>
     </form>
   </div>
@@ -71,13 +71,13 @@
     </div>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
       <span
-        style="background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; padding: 0.35rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.85rem;">
-        ✓ {{ preview.rows|length }} anak siap disimpan
+        style="background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; padding: 0.35rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+        <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> {{ preview.rows|length }} anak siap disimpan
       </span>
       {% if preview.problems %}
       <span
-        style="background: #feebc8; color: #7b341e; border: 1px solid #fbd38d; padding: 0.35rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.85rem;">
-        ⚠️ {{ preview.problems|length }} catatan / dilewati
+        style="background: #feebc8; color: #7b341e; border: 1px solid #fbd38d; padding: 0.35rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+        <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {{ preview.problems|length }} catatan / dilewati
       </span>
       {% endif %}
     </div>
@@ -86,8 +86,9 @@
   {% if preview.problems %}
   <div
     style="background: #fffaf0; border: 1px solid #feebc8; color: #7b341e; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; font-size: 0.9rem; line-height: 1.5;">
-    <strong style="display: block; margin-bottom: 0.5rem; color: #9c4221;">
-      ⚠️ Catatan Validasi & Baris Dilewati:
+    <strong style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem; color: #9c4221;">
+      <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Catatan Validasi & Baris Dilewati:
     </strong>
     <ul style="margin: 0; padding-left: 1.25rem;">
       {% for problem in preview.problems %}
@@ -150,7 +151,7 @@
       <input type="hidden" name="token" value="{{ token }}">
       <button type="submit" class="btn-primary"
         style="margin: 0; min-height: 44px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem;">
-        ✅ Konfirmasi & Simpan {{ preview.rows|length }} Anak
+        <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Konfirmasi & Simpan {{ preview.rows|length }} Anak
       </button>
     </form>
     <a href="/admin/import" role="button" class="btn-secondary"

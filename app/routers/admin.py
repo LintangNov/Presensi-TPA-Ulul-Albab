@@ -552,6 +552,13 @@ async def disable_field(request: Request, field_id: int):
     return RedirectResponse("/admin/fields", status_code=303)
 
 
+@router.post("/admin/fields/{field_id}/aktif")
+async def enable_field(request: Request, field_id: int):
+    local_only(request)
+    students.set_field_active(field_id, True)
+    return RedirectResponse("/admin/fields", status_code=303)
+
+
 @router.post("/admin/fields/{field_id}")
 async def update_field(
     request: Request,
@@ -680,3 +687,35 @@ async def scanner_simulator_register_card(request: Request):
 async def admin_status(request: Request):
     local_only(request)
     return today_data()
+
+
+@router.get("/api/admin/absensi-detail")
+async def absensi_detail(
+    request: Request,
+    student_id: int = 0,
+    tanggal: str = "",
+):
+    local_only(request)
+    if not student_id or not tanggal:
+        return {"found": False, "data": None}
+
+    clean_tanggal = tanggal.strip()
+    if "/" in clean_tanggal:
+        parts = clean_tanggal.split("/")
+        if len(parts) == 3 and len(parts[0]) <= 2 and len(parts[2]) == 4:
+            clean_tanggal = f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
+
+    with connect(DB_PATH) as connection:
+        row = connection.execute(
+            "SELECT id, santri_id, tanggal, waktu, waktu_pulang, status_pulang, "
+            "denda_menit, status, sumber, catatan, nama_pengantar, nama_penjemput, "
+            "alasan_tanpa_kartu, alasan_penjemputan_tanpa_kartu "
+            "FROM absensi WHERE santri_id = ? AND tanggal = ?",
+            (student_id, clean_tanggal),
+        ).fetchone()
+
+    if row is None:
+        return {"found": False, "data": None}
+
+    return {"found": True, "data": dict(row)}
+

@@ -23,6 +23,8 @@ def test_student_and_custom_field_crud(tmp_path):
     students.update_field(field_id, "Wali", 1)
     students.set_field_active(field_id, False)
     assert students.fields()[0]["aktif"] == 0
+    students.set_field_active(field_id, True)
+    assert students.fields()[0]["aktif"] == 1
 
 
 def test_direct_card_registration_normalizes_and_rejects_duplicate(tmp_path):
@@ -257,7 +259,7 @@ def test_scan_page_renders_focus_guard():
     assert messages[0]["status"] == 200
     html = body.decode("utf-8")
     assert "tv-focus-warning" in html
-    assert "SCANNER TIDAK AKTIF" in html
+    assert "scanner tidak aktif" in html.lower()
     assert "btn-activate-scanner" in html
 
 
@@ -603,6 +605,35 @@ def test_confirm_import_preserves_paket(tmp_path, monkeypatch):
     assert saved[0]["nama"] == "Farhan Paket B"
     assert saved[0]["nomor_urut"] == 15
     assert saved[0]["paket"] == "B"
+
+
+def test_enable_and_disable_field_routes(tmp_path, monkeypatch):
+    from app.main import app
+    from app.routers import admin as admin_module
+
+    db_path = tmp_path / "fields_test.db"
+    test_students = StudentService(db_path)
+    monkeypatch.setattr(admin_module, "students", test_students)
+    monkeypatch.setattr(admin_module, "DB_PATH", db_path)
+
+    fid = test_students.add_field("Kontak Wali", 1)
+    assert test_students.fields()[0]["aktif"] == 1
+
+    headers = [
+        (b"origin", b"http://127.0.0.1:8000"),
+        (b"sec-fetch-site", b"same-origin"),
+    ]
+
+    # Nonaktifkan field
+    status = _run_asgi(app, f"/admin/fields/{fid}/nonaktif", "127.0.0.1", method="POST", headers=headers)
+    assert status == 303
+    assert test_students.fields()[0]["aktif"] == 0
+
+    # Aktifkan kembali field
+    status = _run_asgi(app, f"/admin/fields/{fid}/aktif", "127.0.0.1", method="POST", headers=headers)
+    assert status == 303
+    assert test_students.fields()[0]["aktif"] == 1
+
 
 
 
