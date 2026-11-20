@@ -72,7 +72,7 @@ class AttendanceService:
             if connection.execute(
                 "SELECT 1 FROM santri WHERE id = ?", (student_id,)
             ).fetchone() is None:
-                raise ValueError("Murid tidak ditemukan.")
+                raise ValueError("Anak tidak ditemukan.")
             set_setting(connection, "registrasi_santri_id", str(student_id))
             set_setting(connection, "registrasi_expires", expires.isoformat())
 
@@ -280,7 +280,7 @@ class AttendanceService:
                         result = "duplikat"
                         waktu = waktu_pulang_existing
                         tipe_tap = "pulang"
-                        custom_message = f"Murid sudah dijemput hari ini pada pukul {waktu_pulang_existing}."
+                        custom_message = f"Anak sudah dijemput hari ini pada pukul {waktu_pulang_existing}."
 
             connection.execute(
                 "INSERT INTO tap_log "
@@ -311,11 +311,11 @@ class AttendanceService:
             "berhasil": "Absensi masuk berhasil dicatat.",
             "pulang": "Penjemputan tepat waktu berhasil dicatat.",
             "denda": "Penjemputan melewati batas waktu toleransi. Dikenakan denda.",
-            "duplikat": "Murid sudah memiliki catatan absensi hari ini.",
+            "duplikat": "Anak sudah memiliki catatan absensi hari ini.",
             "tidak_dikenal": "Kartu belum terdaftar.",
-            "tidak_aktif": "Data murid ini sedang tidak aktif.",
+            "tidak_aktif": "Data anak ini sedang tidak aktif.",
             "registrasi": "Kartu berhasil didaftarkan.",
-            "uid_terpakai": "Kartu sudah dipakai murid lain.",
+            "uid_terpakai": "Kartu sudah dipakai anak lain.",
         }
         response: dict[str, Any] = {
             "hasil": result,

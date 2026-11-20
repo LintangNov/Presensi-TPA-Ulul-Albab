@@ -65,7 +65,7 @@ class StudentService:
     def list_students_paginated(
         self, search: str = "", page: int = 1, per_page: int = 15
     ) -> tuple[list[dict[str, Any]], int]:
-        """Ambil satu halaman data murid beserta jumlah total baris.
+        """Ambil satu halaman data anak beserta jumlah total baris.
 
         Query dijalankan di level SQL (LIMIT/OFFSET) agar tidak memuat
         seluruh tabel ke memori. Mengembalikan tuple (baris, total).
@@ -108,7 +108,7 @@ class StudentService:
         paket: str = "A",
     ) -> int:
         if not name.strip():
-            raise ValueError("Nama murid wajib diisi.")
+            raise ValueError("Nama anak wajib diisi.")
         paket_val = paket.strip().upper() if paket and paket.strip().upper() in {"A", "B"} else "A"
         payload = json.dumps(extra_data, ensure_ascii=False)
         nomor_kartu_str = str(number) if number is not None else ""
@@ -118,7 +118,7 @@ class StudentService:
                     "UPDATE santri SET nomor_urut = ?, nama = ?, extra_data = ?, paket = ? WHERE id = ?",
                     (number, name.strip(), payload, paket_val, student_id),
                 )
-                # Sinkronisasikan nomor_kartu_custom di tabel kartu_santri agar sesuai nomor absen murid
+                # Sinkronisasikan nomor_kartu_custom di tabel kartu_santri agar sesuai nomor absen anak
                 connection.execute(
                     "UPDATE kartu_santri SET nomor_kartu_custom = ? WHERE santri_id = ?",
                     (nomor_kartu_str, student_id),
@@ -185,9 +185,9 @@ class StudentService:
                 "SELECT id, nama, nomor_urut FROM santri WHERE id = ?", (student_id,)
             ).fetchone()
             if student is None:
-                raise LookupError("Murid tidak ditemukan.")
+                raise LookupError("Anak tidak ditemukan.")
 
-            # Cek apakah UID sudah dipakai oleh murid lain
+            # Cek apakah UID sudah dipakai oleh anak lain
             owner_card = connection.execute(
                 "SELECT santri_id FROM kartu_santri WHERE rfid_uid = ? AND santri_id != ?",
                 (normalized, student_id),
@@ -197,7 +197,7 @@ class StudentService:
                 (normalized, student_id),
             ).fetchone()
             if owner_card or owner_santri:
-                raise ValueError("Kartu sudah dipakai murid lain.")
+                raise ValueError("Kartu sudah dipakai anak lain.")
 
             nomor_kartu_custom = str(student["nomor_urut"]) if student["nomor_urut"] is not None else ""
             now_str = now_local().isoformat(timespec="seconds")

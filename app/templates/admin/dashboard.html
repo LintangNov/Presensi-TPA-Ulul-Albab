@@ -1,6 +1,7 @@
 {% extends "admin/base.html" %}
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+<div
+  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
   <div>
     <h2 style="margin: 0;">Dashboard</h2>
   </div>
@@ -19,30 +20,43 @@
       <div style="display: flex; flex-direction: column; gap: 0.25rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <h3 style="margin: 0; font-size: 1.15rem;">Status Scanner USB</h3>
-          <span id="scanner-hardware-status" class="hw-badge {% if scanner_hardware.connected %}connected{% else %}disconnected{% endif %}">
+          <span id="scanner-hardware-status"
+            class="hw-badge {% if scanner_hardware.connected %}connected{% else %}disconnected{% endif %}">
             {{ scanner_hardware.details }}
           </span>
         </div>
         <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
-          Scanner USB standby menangkap kartu di latar belakang halaman ini. Tab scanner hanya bertindak sebagai penampil absensi.
+          Scanner USB standby menangkap kartu di latar belakang halaman ini. Tab scanner hanya bertindak sebagai
+          penampil absensi.
         </p>
       </div>
     </div>
-    <div class="scanner-ctrl-right scanner-toggle-box" id="scanner-toggle-container" style="cursor: pointer;">
-      <div style="text-align: right;">
-        <span style="display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700;">Scanner</span>
-        <span id="dashboard-scanner-status" class="scanner-operational-status" style="font-size: 0.95rem; font-weight: 700;">Memuat…</span>
+  </div>
+
+  <div class="scanner-actions-bar">
+    <div class="scanner-toggle-box" id="scanner-toggle-container" role="button" tabindex="0"
+      title="Klik untuk mengaktifkan atau menonaktifkan scanner">
+      <div style="text-align: right; user-select: none;">
+        <span class="scanner-toggle-title">Scanner</span>
+        <span id="dashboard-scanner-status" class="scanner-operational-status">Memuat…</span>
       </div>
       <label class="switch-toggle" title="Aktifkan / Matikan Scanner Manual">
         <input type="checkbox" id="scanner-toggle" checked>
         <span class="switch-slider"></span>
       </label>
     </div>
+
+    <button type="button" class="btn-manual-modal" id="btn-open-manual-modal">
+      <span>Catat Presensi Manual</span>
+    </button>
   </div>
 
-  <div style="background: var(--bg); border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-    <span>Pastikan tab ini tetap terbuka di pc admin agar scanner selalu siap memproses tap kartu murid.</span>
-    <span>Jam Operasional: <strong>Masuk 06:30</strong> | <strong>Paket Half Day 06.30 - 13:00</strong> | <strong>Paket Full Day 06.30 - 16:00</strong></span>
+  <div
+    style="background: var(--bg); border-radius: var(--radius-sm); padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+    <span>Pastikan tab ini tetap terbuka di pc admin agar scanner selalu siap memproses tap kartu anak.</span>
+    <span><strong>Paket Half Day 06.30 - 13:00</strong> |
+      <strong>Paket
+        Full Day 06.30 - 16:00</strong></span>
   </div>
 </section>
 
@@ -62,14 +76,15 @@
   </article>
   <article>
     <strong>{{ active_count }}</strong>
-    <span>Total Murid Aktif</span>
+    <span>Total Anak Aktif</span>
   </article>
 </section>
 
 <section class="settings-card" style="margin-top: 1rem;">
   <div class="settings-card-title">
     <span>Aktivitas Tap Kartu Terkini</span>
-    <span style="font-size: 0.85rem; font-weight: normal; color: var(--text-muted);">Otomatis sinkron dengan TV LED</span>
+    <span style="font-size: 0.85rem; font-weight: normal; color: var(--text-muted);">Otomatis sinkron dengan TV
+      LED</span>
   </div>
   <ul id="recent-tap-feed" class="feed-list">
     <li class="feed-item" style="color: var(--text-muted); justify-content: center; font-style: italic;">
@@ -77,4 +92,6 @@
     </li>
   </ul>
 </section>
+
+{% include "admin/components/manual_attendance_modal.html" %}
 {% endblock %}

@@ -149,6 +149,68 @@ def initialize(db_path: Path) -> None:
             elif current["version"] > SCHEMA_VERSION:
                 raise RuntimeError("Versi database lebih baru dari aplikasi.")
 
+        # View dan Trigger kompatibilitas nama tabel 'anak' dan 'kartu_anak'
+        # Memungkinkan kueri SELECT, INSERT, UPDATE, dan DELETE dengan nama 'anak'
+        # tanpa mengubah skema tabel fisik dan foreign key yang sudah ada.
+        connection.executescript(
+            """
+            CREATE VIEW IF NOT EXISTS anak AS SELECT * FROM santri;
+
+            CREATE TRIGGER IF NOT EXISTS trigger_insert_anak
+            INSTEAD OF INSERT ON anak
+            BEGIN
+                INSERT INTO santri (id, nomor_urut, rfid_uid, nama, paket, extra_data, aktif, created_at)
+                VALUES (new.id, new.nomor_urut, new.rfid_uid, new.nama, new.paket, new.extra_data, new.aktif, new.created_at);
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS trigger_update_anak
+            INSTEAD OF UPDATE ON anak
+            BEGIN
+                UPDATE santri SET
+                    nomor_urut = new.nomor_urut,
+                    rfid_uid = new.rfid_uid,
+                    nama = new.nama,
+                    paket = new.paket,
+                    extra_data = new.extra_data,
+                    aktif = new.aktif
+                WHERE id = old.id;
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS trigger_delete_anak
+            INSTEAD OF DELETE ON anak
+            BEGIN
+                DELETE FROM santri WHERE id = old.id;
+            END;
+
+            CREATE VIEW IF NOT EXISTS kartu_anak AS SELECT * FROM kartu_santri;
+
+            CREATE TRIGGER IF NOT EXISTS trigger_insert_kartu_anak
+            INSTEAD OF INSERT ON kartu_anak
+            BEGIN
+                INSERT INTO kartu_santri (id, santri_id, rfid_uid, nomor_kartu_custom, slot, label, created_at)
+                VALUES (new.id, new.santri_id, new.rfid_uid, new.nomor_kartu_custom, new.slot, new.label, new.created_at);
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS trigger_update_kartu_anak
+            INSTEAD OF UPDATE ON kartu_anak
+            BEGIN
+                UPDATE kartu_santri SET
+                    santri_id = new.santri_id,
+                    rfid_uid = new.rfid_uid,
+                    nomor_kartu_custom = new.nomor_kartu_custom,
+                    slot = new.slot,
+                    label = new.label
+                WHERE id = old.id;
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS trigger_delete_kartu_anak
+            INSTEAD OF DELETE ON kartu_anak
+            BEGIN
+                DELETE FROM kartu_santri WHERE id = old.id;
+            END;
+            """
+        )
+
 
 def reset_all_data(db_path: Path) -> None:
     with connect(db_path) as connection:

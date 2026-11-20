@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title|default("Admin") }} - Absensi TPA</title>
   <link rel="stylesheet" href="{{ url_for('static', path='css/pico.min.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', path='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}?v=5">
+  <link rel="stylesheet" href="{{ url_for('static', path='css/theme.css') }}?v=5">
   {% block styles %}{% endblock %}
   <script src="{{ url_for('static', path='js/htmx.min.js') }}"></script>
 </head>
@@ -17,15 +17,15 @@
         <h3>Sistem Presensi</h3>
         <h1>TPA Ulul Albab</h1>
       </div>
-      <div id="sidebar-scanner-box" style="background: var(--surface); opacity: 0.9; border-radius: var(--radius-sm); padding: 0.6rem 0.8rem; margin: -0.5rem 0 0.5rem 0; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+      <div id="sidebar-scanner-box">
         <span id="scanner-operational-indicator" class="status-dot active"></span>
-        <span style="font-weight: 600;" id="sidebar-scanner-status" class="scanner-operational-status">Memuat…</span>
+        <span id="sidebar-scanner-status" class="scanner-operational-status">Memuat…</span>
       </div>
       <nav class="sidebar-nav">
         <a href="/admin" {% if request.url.path == "/admin" %}aria-current="page"{% endif %}>Dashboard</a>
 
         <a href="/admin/hari-ini" {% if request.url.path == "/admin/hari-ini" %}aria-current="page"{% endif %}>Absensi Hari Ini</a>
-        <a href="/admin/murid" {% if request.url.path.startswith('/admin/murid') or request.url.path.startswith('/admin/santri') %}aria-current="page"{% endif %}>Data Murid</a>
+        <a href="/admin/anak" {% if request.url.path.startswith('/admin/anak') or request.url.path.startswith('/admin/murid') or request.url.path.startswith('/admin/santri') %}aria-current="page"{% endif %}>Data Anak</a>
         <a href="/admin/rekap" {% if request.url.path.startswith("/admin/rekap") %}aria-current="page"{% endif %}>Rekap & Laporan</a>
         <a href="/admin/import" {% if request.url.path.startswith("/admin/import") %}aria-current="page"{% endif %}>Impor Excel</a>
         <a href="/admin/fields" {% if request.url.path.startswith("/admin/fields") %}aria-current="page"{% endif %}>Pengaturan</a>

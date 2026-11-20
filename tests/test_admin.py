@@ -325,3 +325,286 @@ def _run_asgi_full(app, path):
     return status, body.decode("utf-8", errors="replace")
 
 
+def test_manual_attendance_modal_rendered_in_dashboard():
+    from app.main import app
+
+    code, html = _run_asgi_full(app, "/admin")
+    assert code == 200
+    assert "btn-open-manual-modal" in html
+    assert "manual-attendance-dialog" in html
+    assert "Catat Presensi Manual" in html
+
+
+def test_manual_attendance_removed_from_today_page():
+    from app.main import app
+
+    code, html = _run_asgi_full(app, "/admin/hari-ini")
+    assert code == 200
+    assert "form-catat-manual" not in html
+    assert "manual-attendance-dialog" not in html
+    assert "edit-attendance-dialog" in html
+    assert "<details" not in html
+
+
+def test_manual_attendance_redirect_to_dashboard(tmp_path, monkeypatch):
+    import urllib.parse
+    from app.main import app
+    from app.routers import admin as admin_module
+    from app.services.reports import ReportService
+    from app.services.students import StudentService
+
+    db_path = tmp_path / "test_manual_redirect.db"
+    students = StudentService(db_path)
+    reports = ReportService(db_path)
+    monkeypatch.setattr(admin_module, "students", students)
+    monkeypatch.setattr(admin_module, "reports", reports)
+
+    sid = students.save_student(None, "Rizky", 1, {})
+
+    payload = urllib.parse.urlencode({
+        "student_id": sid,
+        "tanggal": "15/11/2026",
+        "status": "Hadir",
+        "waktu": "07.00",
+        "return_to": "dashboard",
+    }).encode("utf-8")
+
+    status, location = _post_form(app, "/admin/absensi-manual", payload)
+    assert status == 303
+    assert location == "/admin"
+
+
+def test_manual_attendance_redirect_default(tmp_path, monkeypatch):
+    import urllib.parse
+    from app.main import app
+    from app.routers import admin as admin_module
+    from app.services.reports import ReportService
+    from app.services.students import StudentService
+
+    db_path = tmp_path / "test_manual_default.db"
+    students = StudentService(db_path)
+    reports = ReportService(db_path)
+    monkeypatch.setattr(admin_module, "students", students)
+    monkeypatch.setattr(admin_module, "reports", reports)
+
+    sid = students.save_student(None, "Zahra", 2, {})
+
+    payload = urllib.parse.urlencode({
+        "student_id": sid,
+        "tanggal": "15/11/2026",
+        "status": "Hadir",
+        "waktu": "07.00",
+        "return_to": "",
+    }).encode("utf-8")
+
+    status, location = _post_form(app, "/admin/absensi-manual", payload)
+    assert status == 303
+    assert location == "/admin/hari-ini"
+
+
+def _post_form(app, path, body_bytes):
+    messages = []
+
+    async def receive():
+        return {"type": "http.request", "body": body_bytes, "more_body": False}
+
+    async def send(message):
+        messages.append(message)
+
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0", "spec_version": "2.0"},
+        "http_version": "1.1",
+        "method": "POST",
+        "scheme": "http",
+        "path": path,
+        "raw_path": path.encode(),
+        "query_string": b"",
+        "headers": [
+            (b"content-type", b"application/x-www-form-urlencoded"),
+            (b"content-length", str(len(body_bytes)).encode()),
+            (b"origin", b"http://127.0.0.1:8000"),
+            (b"host", b"127.0.0.1:8000"),
+        ],
+        "client": ("127.0.0.1", 1234),
+        "server": ("127.0.0.1", 8000),
+    }
+    asyncio.run(app(scope, receive, send))
+    status = next((m["status"] for m in messages if m["type"] == "http.response.start"), 500)
+    headers = next((m["headers"] for m in messages if m["type"] == "http.response.start"), [])
+    location = next((v.decode("utf-8") for k, v in headers if k.lower() == b"location"), "")
+    return status, location
+
+
+def test_edit_attendance_row_button_and_update(tmp_path, monkeypatch):
+    import urllib.parse
+    from app.main import app
+    from app.routers import admin as admin_module
+    from app.services.reports import ReportService
+    from app.services.students import StudentService
+
+    db_path = tmp_path / "test_edit_modal.db"
+    students = StudentService(db_path)
+    reports = ReportService(db_path)
+    monkeypatch.setattr(admin_module, "students", students)
+    monkeypatch.setattr(admin_module, "reports", reports)
+    monkeypatch.setattr(admin_module, "DB_PATH", db_path)
+
+    from datetime import datetime
+    today = datetime.now().astimezone().date().isoformat()
+    parts = today.split("-")
+    today_formatted = f"{parts[2]}/{parts[1]}/{parts[0]}"
+
+    sid = students.save_student(None, "Jamal", 1, {})
+    reports.save_manual(
+        student_id=sid,
+        tanggal=today,
+        status="Hadir",
+        waktu="07:00",
+        catatan="Catatan awal",
+    )
+
+    code, html = _run_asgi_full(app, "/admin/hari-ini")
+    assert code == 200
+    assert "btn-open-edit-modal" in html
+    assert 'data-student-name="Jamal"' in html
+    assert "edit-attendance-dialog" in html
+    assert "<details" not in html
+
+    # Lakukan update melalui endpoint absensi-manual
+    payload = urllib.parse.urlencode({
+        "student_id": sid,
+        "tanggal": today_formatted,
+        "status": "Hadir",
+        "waktu": "07.15",
+        "waktu_pulang": "13.00",
+        "status_pulang": "Tepat Waktu",
+        "nama_pengantar": "Ayah",
+        "return_to": "/admin/hari-ini",
+    }).encode("utf-8")
+
+    status, location = _post_form(app, "/admin/absensi-manual", payload)
+    assert status == 303
+    assert location == "/admin/hari-ini"
+
+    # Periksa perubahan tersimpan di database
+    rows = reports.attendance_rows(today, today)
+    assert len(rows) == 1
+    assert rows[0]["waktu"] == "07:15"
+    assert rows[0]["waktu_pulang"] == "13:00"
+    assert rows[0]["status_pulang"] == "Tepat Waktu"
+    assert rows[0]["nama_pengantar"] == "Ayah"
+
+
+def test_register_rfid_dialog_layout_and_slots():
+    from app.main import app
+
+    code, html = _run_asgi_full(app, "/admin/murid")
+    assert code == 200
+    assert 'id="register-dialog"' in html
+    assert 'class="register-modal-body"' in html
+    assert 'class="card-slot-box' in html
+    assert 'name="card_slot"' in html
+    assert "btn-cancel-register" in html
+
+
+def test_import_page_and_template_download():
+    from app.main import app
+
+    code, html = _run_asgi_full(app, "/admin/import")
+    assert code == 200
+    assert "Impor Data Anak" in html
+    assert "Unduh Template Berpanduan" in html
+    assert "/admin/import/template.xlsx" in html
+
+    # Unduh template
+    messages = []
+    body = bytearray()
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        messages.append(message)
+        if message["type"] == "http.response.body":
+            body.extend(message.get("body", b""))
+
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0", "spec_version": "2.0"},
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": "/admin/import/template.xlsx",
+        "raw_path": b"/admin/import/template.xlsx",
+        "query_string": b"",
+        "headers": [],
+        "client": ("127.0.0.1", 1234),
+        "server": ("127.0.0.1", 8000),
+    }
+    asyncio.run(app(scope, receive, send))
+    assert messages[0]["status"] == 200
+
+    from io import BytesIO
+    from openpyxl import load_workbook
+    wb = load_workbook(BytesIO(body), data_only=True)
+    assert "Data Anak" in wb.sheetnames
+    assert "Panduan Pengisian" in wb.sheetnames
+
+
+def test_confirm_import_preserves_paket(tmp_path, monkeypatch):
+    import time
+    import urllib.parse
+    from app.main import app
+    from app.routers import admin as admin_module
+    from app.services.students import StudentService
+
+    db_path = tmp_path / "test_import_paket.db"
+    students = StudentService(db_path)
+    monkeypatch.setattr(admin_module, "students", students)
+    monkeypatch.setattr(admin_module, "DB_PATH", db_path)
+
+    # Simulasikan pratinjau dengan satu murid Paket B
+    token = "test-token-123"
+    admin_module.import_previews[token] = {
+        "_created_at": time.time(),
+        "rows": [
+            {
+                "nama": "Farhan Paket B",
+                "nomor_urut": 15,
+                "paket": "B",
+                "extra_data": {},
+            }
+        ],
+        "problems": [],
+    }
+
+    payload = urllib.parse.urlencode({"token": token}).encode()
+    headers = [
+        (b"content-type", b"application/x-www-form-urlencoded"),
+        (b"content-length", str(len(payload)).encode()),
+        (b"origin", b"http://127.0.0.1:8000"),
+        (b"sec-fetch-site", b"same-origin"),
+    ]
+
+    status = _run_asgi(
+        app,
+        "/admin/import/konfirmasi",
+        "127.0.0.1",
+        method="POST",
+        headers=headers,
+        body=payload,
+    )
+    assert status == 303
+
+    # Verifikasi data tersimpan di database dengan paket B
+    saved = students.list_students()
+    assert len(saved) == 1
+    assert saved[0]["nama"] == "Farhan Paket B"
+    assert saved[0]["nomor_urut"] == 15
+    assert saved[0]["paket"] == "B"
+
+
+
+
+

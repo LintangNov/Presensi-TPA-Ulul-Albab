@@ -4,8 +4,8 @@
 <form method="get" action="/admin/rekap" class="report-filters">
   <label>Mulai <input type="date" name="mulai" value="{{ mulai }}"></label>
   <label>Sampai <input type="date" name="sampai" value="{{ sampai }}"></label>
-  <label>Murid <select name="student_id">
-      <option value="">Semua murid</option>{% for student in students %}<option value="{{ student.id }}" {% if
+  <label>Anak <select name="student_id">
+      <option value="">Semua anak</option>{% for student in students %}<option value="{{ student.id }}" {% if
         selected_student==student.id %}selected{% endif %}>{{ student.nama }}</option>{% endfor %}
     </select></label>
   <label>Status <select name="status">
@@ -17,7 +17,7 @@
 <p><a role="button"
     href="/admin/rekap/export.xlsx?mulai={{ mulai }}&sampai={{ sampai }}{% if selected_student %}&student_id={{ selected_student }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">Unduh
     Excel (.xlsx)</a></p>
-<h3>Ringkasan per murid</h3>
+<h3>Ringkasan per anak</h3>
 {% if summary %}
 <table>
   <thead>

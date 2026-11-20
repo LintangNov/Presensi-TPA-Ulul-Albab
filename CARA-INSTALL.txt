@@ -29,7 +29,7 @@ CATATAN UNTUK PEMBUAT (PC source code):
 - Windows 10 / 11, 64-bit.
 - Microsoft Edge (untuk jendela scanner mode app). Jika tidak ada Edge,
   buka manual di Chrome/Firefox: http://127.0.0.1:8000/scan
-- USB RFID reader tipe keyboard-emulator + kartu murid.
+- USB RFID reader tipe keyboard-emulator + kartu anak.
 - TIDAK perlu install Python, pip, virtualenv, atau internet.
 - Port 8000-8010 harus bebas (dipilih otomatis oleh Start-Absensi.bat).
 
@@ -62,15 +62,15 @@ CATATAN UNTUK PEMBUAT (PC source code):
    - Harus tertulis misal "1 perangkat USB terhubung".
    - Jika "Scanner USB tidak terdeteksi (Cek kabel)": cabut-colok reader,
      coba port USB lain, pastikan tidak lewat hub USB yang longgar.
-2. Buka Data Murid -> Tambah 1 murid tes (nama + paket A/B).
-3. Klik "Daftarkan Kartu" pada murid itu, tempel kartu ke reader,
+2. Buka Data Anak -> Tambah 1 anak tes (nama + paket A/B).
+3. Klik "Daftarkan Kartu" pada anak itu, tempel kartu ke reader,
    pastikan UID muncul dan tersimpan.
 4. Tempel kartu yang sama di halaman /scan atau tab admin:
    - Tap ke-1 = Absen Masuk (nama muncul besar di TV + riwayat).
    - Tap ke-2 di hari yang sama = Penjemputan (Pulang).
    - Tap ke-3 dst = "Sudah Tercatat Hari Ini" (duplikat, tidak dobel data).
 5. Cek Absensi Hari Ini + Rekap: data harus muncul.
-6. Selesai tes: hapus murid tes bila perlu, lalu Matikan-Absensi.bat.
+6. Selesai tes: hapus anak tes bila perlu, lalu Matikan-Absensi.bat.
 
 5. PANDUAN PENGGUNAAN HARIAN (untuk pengurus)
 ---------------------------------------------
@@ -83,7 +83,7 @@ A. Menyalakan & mematikan
      Tunggu 2-3 detik setelah tap terakhir.
 
 B. Tata letak layar yang disarankan
-   - Laptop admin : buka /admin (Dashboard, Data Murid, Absensi Hari Ini).
+   - Laptop admin : buka /admin (Dashboard, Data Anak, Absensi Hari Ini).
    - TV LED       : buka /scan (tampilan besar untuk anak/orang tua).
    - Tab /admin tempat reader aktif HARUS tetap terbuka agar tap tertangkap.
      Jika ingin mengetik di form, MATIKAN dulu toggle Scanner di Dashboard
@@ -94,8 +94,8 @@ C. Alur absensi masuk (pagi)
    2. Aturan jam: Masuk mulai 06:30. Tap sebelum 06:30 dicatat
       "Masuk sebelum jam operasional".
    3. Kartu belum terdaftar -> "KARTU BELUM TERDAFTAR". Daftarkan dulu
-      di Data Murid -> Daftarkan Kartu.
-   4. Murid Nonaktif -> "MURID NONAKTIF". Aktifkan dulu di Data Murid.
+      di Data Anak -> Daftarkan Kartu.
+   4. Anak Nonaktif -> "ANAK NONAKTIF". Aktifkan dulu di Data Anak.
 
 D. Alur penjemputan / pulang (siang-sore)
    1. Orang tua datang, anak/operator tempel kartu yang SAMA.
@@ -109,18 +109,18 @@ D. Alur penjemputan / pulang (siang-sore)
 
 E. Menu-menu admin
    - Dashboard: status scanner + toggle Aktif/Nonaktif + angka
-     Hadir Masuk / Sudah Dijemput / Denda / Total Murid Aktif + tap terakhir.
+     Hadir Masuk / Sudah Dijemput / Denda / Total Anak Aktif + tap terakhir.
    - Absensi Hari Ini: daftar belum hadir, tabel absensi hari ini,
      form "Catat absensi manual" (untuk lupa bawa kartu). Baris manual
      bisa "Ubah" / "Hapus manual".
-   - Data Murid: tambah murid, cari, edit paket/status, daftarkan kartu,
+   - Data Anak: tambah anak, cari, edit paket/status, daftarkan kartu,
      nonaktifkan (lulus/keluar) tanpa hapus data, hapus permanen bila perlu.
-   - Rekap & Laporan: filter tanggal + murid + status, ringkasan per murid
+   - Rekap & Laporan: filter tanggal + anak + status, ringkasan per anak
      (Hadir/Izin/Sakit/Alpha), rincian harian, tombol "Unduh Excel (.xlsx)".
    - Impor Excel: unduh template -> isi Nomor + Nama -> unggah -> validasi
      pratinjau -> Konfirmasi simpan. Data lama tidak ditimpa.
    - Pengaturan (urut dari atas):
-     1) Kustomisasi Kolom Murid: tambah kolom khusus (Nama Ortu, Kontak,
+     1) Kustomisasi Kolom Anak: tambah kolom khusus (Nama Ortu, Kontak,
         Alergi) yang ikut tampil di form + Excel.
      2) Pencadangan Database: status cadangan terakhir + tombol
         "Cadangkan Sekarang". Otomatis tiap 24 jam + tiap aplikasi mulai.
@@ -139,7 +139,7 @@ F. Toggle Scanner (Dashboard, kanan atas kartu Status)
   Cara A (lengkap, termasuk riwayat): copy file data\tpa_absensi.db
   dari PC lama ke folder yang sama di PC baru (saat aplikasi MATI),
   lalu nyalakan. Folder data\backup boleh ikut dicopy.
-  Cara B (data murid saja): di PC lama Rekap -> Unduh Excel, di PC baru
+  Cara B (data anak saja): di PC lama Rekap -> Unduh Excel, di PC baru
   Impor Excel -> unggah template yang sudah diisi. Riwayat tidak ikut.
 
 7. BACKUP & RESTORE DARURAT

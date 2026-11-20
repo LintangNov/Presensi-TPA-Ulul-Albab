@@ -1,0 +1,288 @@
+<!-- Modal Dialog Catat Presensi Manual (Pusat Operasional Dashboard) -->
+<dialog id="manual-attendance-dialog">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text);">Catat Presensi Manual</h3>
+        <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">
+          Input kehadiran, izin, sakit, atau kepulangan anak tanpa scan kartu RFID.
+        </p>
+      </div>
+      <button type="button" class="modal-close-btn" id="btn-close-manual-modal" aria-label="Tutup Dialog">✕</button>
+    </div>
+
+    <form method="post" action="/admin/absensi-manual" id="form-manual-attendance" class="manual-modal-form">
+      <input type="hidden" name="return_to" value="dashboard">
+
+      <div class="manual-modal-body">
+        <div class="manual-modal-grid">
+          <!-- Pilih Anak -->
+          <label class="field-span-2">Anak
+            <select name="student_id" id="manual-student-select" required>
+              <option value="">-- Pilih Anak --</option>
+              {% for row in rows %}
+                {% if row.aktif %}
+                  <option value="{{ row.id }}">
+                    {{ row.nama }}{% if row.nomor_urut %} (No. {{ row.nomor_urut }}){% endif %} - {{ "Paket A (Half Day)" if row.paket == 'A' else "Paket B (Full Day)" }}
+                  </option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </label>
+
+          <!-- Tanggal Presensi (DD/MM/YYYY) dengan Ikon Kalender Visual -->
+          <label>Tanggal
+            <div style="position: relative; display: flex; align-items: center; width: 100%;">
+              <input 
+                type="text" 
+                id="manual-tanggal-display" 
+                name="tanggal"
+                placeholder="DD/MM/YYYY" 
+                maxlength="10" 
+                autocomplete="off"
+                value="{{ today_formatted }}"
+                style="width: 100%; padding-right: 2.75rem; font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 0;"
+                title="Ketik tanggal (DD/MM/YYYY) atau klik ikon kalender di kanan"
+                required
+              >
+              <button 
+                type="button" 
+                id="btn-open-calendar-picker"
+                title="Buka kalender visual" 
+                aria-label="Pilih tanggal dari kalender"
+                style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 0.35rem; margin: 0; cursor: pointer; color: #718096; display: flex; align-items: center; justify-content: center; width: auto; height: auto;"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </button>
+            </div>
+          </label>
+
+          <!-- Status Kehadiran -->
+          <label>Status Hadir
+            <select name="status" id="manual-status-select">
+              <option value="Hadir">Hadir</option>
+              <option value="Izin">Izin</option>
+              <option value="Sakit">Sakit</option>
+              <option value="Alpha">Alpha</option>
+            </select>
+          </label>
+
+          <!-- Jam Masuk (24 Jam: 00.00 - 23.59) -->
+          <label>Jam Masuk (24 Jam)
+            <input 
+              type="text" 
+              name="waktu" 
+              class="input-jam-24" 
+              placeholder="07.00" 
+              maxlength="5" 
+              autocomplete="off"
+              style="font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0;"
+              title="Format 24 jam: 00.00 s/d 23.59"
+            >
+          </label>
+
+          <!-- Jam Pulang (24 Jam: 00.00 - 23.59) -->
+          <label>Jam Pulang (24 Jam)
+            <input 
+              type="text" 
+              name="waktu_pulang" 
+              class="input-jam-24" 
+              placeholder="13.00" 
+              maxlength="5" 
+              autocomplete="off"
+              style="font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0;"
+              title="Format 24 jam: 00.00 s/d 23.59"
+            >
+          </label>
+
+          <!-- Dropdown Pengantar dengan Teks Lainnya -->
+          <div class="form-group-combo dropdown-with-custom">
+            <label>Nama Pengantar</label>
+            <select name="nama_pengantar">
+              <option value="">-- Pilih Pengantar --</option>
+              <option value="Ayah">Ayah</option>
+              <option value="Ibu">Ibu</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+            <input type="text" class="input-custom-text" name="nama_pengantar_lainnya" placeholder="Ketik nama pengantar..." style="display: none; margin-top: 0.35rem;">
+          </div>
+
+          <!-- Dropdown Penjemput dengan Teks Lainnya -->
+          <div class="form-group-combo dropdown-with-custom">
+            <label>Nama Penjemput</label>
+            <select name="nama_penjemput">
+              <option value="">-- Pilih Penjemput --</option>
+              <option value="Ayah">Ayah</option>
+              <option value="Ibu">Ibu</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+            <input type="text" class="input-custom-text" name="nama_penjemput_lainnya" placeholder="Ketik nama penjemput..." style="display: none; margin-top: 0.35rem;">
+          </div>
+
+          <!-- Alasan Masuk Tanpa Kartu (Opsional) -->
+          <label>Alasan Masuk Tanpa Kartu
+            <input type="text" name="alasan_tanpa_kartu" placeholder="Cth: Kartu anak tertinggal">
+          </label>
+
+          <!-- Alasan Penjemputan Tanpa Kartu (Opsional) -->
+          <label>Alasan Penjemputan Tanpa Kartu
+            <input type="text" name="alasan_penjemputan_tanpa_kartu" placeholder="Cth: Kartu penjemput tertinggal">
+          </label>
+
+          <!-- Catatan (Span 2 Kolom) -->
+          <label class="field-span-2">Catatan Tambahan
+            <input name="catatan" placeholder="Catatan tambahan (opsional)...">
+          </label>
+        </div>
+      </div>
+
+      <!-- Tombol Aksi di Bagian Bawah (Tetap Terlihat / Pinned Footer) -->
+      <div class="modal-actions-bar">
+        <button type="button" class="btn-sm btn-secondary" id="btn-cancel-manual-modal">Batal</button>
+        <button type="submit" class="btn-sm btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0 1.25rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Simpan Presensi Manual
+        </button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  const modal = document.querySelector("#manual-attendance-dialog");
+  const openBtn = document.querySelector("#btn-open-manual-modal");
+  const closeBtn = document.querySelector("#btn-close-manual-modal");
+  const cancelBtn = document.querySelector("#btn-cancel-manual-modal");
+  const calBtn = document.querySelector("#btn-open-calendar-picker");
+
+  if (!modal) return;
+
+  function openModal() {
+    modal.showModal();
+    // Beri fokus ke dropdown anak
+    const studentSelect = modal.querySelector("#manual-student-select");
+    if (studentSelect) studentSelect.focus();
+  }
+
+  function closeModal() {
+    modal.close();
+  }
+
+  if (openBtn) openBtn.addEventListener("click", openModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+
+  // Klik backdrop untuk menutup modal
+  modal.addEventListener("click", (e) => {
+    const rect = modal.getBoundingClientRect();
+    const isInDialog = (
+      rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
+      rect.left <= e.clientX && e.clientX <= rect.left + rect.width
+    );
+    if (!isInDialog) {
+      closeModal();
+    }
+  });
+
+  // Helper Calendar Picker Mandiri
+  function openCalendarPicker() {
+    let picker = document.getElementById("standalone-native-picker");
+    if (!picker) {
+      picker = document.createElement("input");
+      picker.type = "date";
+      picker.id = "standalone-native-picker";
+      picker.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;";
+      document.body.appendChild(picker);
+      picker.addEventListener("change", () => {
+        if (picker.value) {
+          const parts = picker.value.split("-");
+          if (parts.length === 3) {
+            const displayInput = document.getElementById("manual-tanggal-display");
+            if (displayInput) {
+              displayInput.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+          }
+        }
+      });
+    }
+
+    const currentDisplay = document.getElementById("manual-tanggal-display");
+    if (currentDisplay && currentDisplay.value) {
+      const parts = currentDisplay.value.trim().split(/[\/\-\.]/);
+      if (parts.length === 3 && parts[2].length === 4) {
+        picker.value = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+      }
+    }
+
+    if (typeof picker.showPicker === "function") {
+      picker.showPicker();
+    } else {
+      picker.click();
+    }
+  }
+
+  if (calBtn) calBtn.addEventListener("click", openCalendarPicker);
+
+  // Format Auto-Slash DD/MM/YYYY saat mengetik
+  const dateInput = document.getElementById("manual-tanggal-display");
+  if (dateInput) {
+    dateInput.addEventListener("input", (e) => {
+      let val = e.target.value.replace(/[^\d]/g, "");
+      if (val.length > 2 && val.length <= 4) {
+        val = val.slice(0, 2) + "/" + val.slice(2);
+      } else if (val.length > 4) {
+        val = val.slice(0, 2) + "/" + val.slice(2, 4) + "/" + val.slice(4, 8);
+      }
+      e.target.value = val;
+    });
+  }
+
+  // Format Auto-Dot Jam 24 Jam (00.00 - 23.59)
+  modal.querySelectorAll(".input-jam-24").forEach((input) => {
+    input.addEventListener("input", (e) => {
+      let val = e.target.value.replace(/[^\d]/g, "");
+      if (val.length >= 2) {
+        let jam = parseInt(val.slice(0, 2), 10);
+        if (jam > 23) jam = 23;
+        let jamStr = String(jam).padStart(2, "0");
+        if (val.length > 2) {
+          let mnt = parseInt(val.slice(2, 4), 10);
+          if (mnt > 59) mnt = 59;
+          let mntStr = String(mnt).padStart(2, "0");
+          e.target.value = jamStr + "." + mntStr;
+        } else {
+          e.target.value = jamStr;
+        }
+      } else {
+        e.target.value = val;
+      }
+    });
+  });
+
+  // Dropdown dengan input "Lainnya"
+  modal.querySelectorAll(".dropdown-with-custom").forEach((container) => {
+    const select = container.querySelector("select");
+    const input = container.querySelector(".input-custom-text");
+    if (!select || !input) return;
+
+    select.addEventListener("change", () => {
+      if (select.value === "Lainnya") {
+        input.style.display = "block";
+        input.focus();
+      } else {
+        input.style.display = "none";
+        input.value = "";
+      }
+    });
+  });
+})();
+</script>
+

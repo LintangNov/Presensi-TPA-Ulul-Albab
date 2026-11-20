@@ -62,9 +62,9 @@ def test_import_preview_valid_and_problem_rows(tmp_path):
     students.add_field("Nama Wali")
     workbook = load_workbook(BytesIO(student_template(students.fields(True))))
     sheet = workbook.active
-    sheet.append([1, "Valid", "Wali Valid"])
-    sheet.append([2, "", "Tanpa Nama"])
-    sheet.append([3, "Valid", "Duplikat"])
+    sheet.append([1, "Valid", "A", "Wali Valid"])
+    sheet.append([2, "", "A", "Tanpa Nama"])
+    sheet.append([3, "Valid", "B", "Duplikat"])
     output = BytesIO()
     workbook.save(output)
 
@@ -72,3 +72,70 @@ def test_import_preview_valid_and_problem_rows(tmp_path):
     assert len(preview["rows"]) == 1
     assert len(preview["problems"]) == 2
     assert preview["rows"][0]["nama"] == "Valid"
+    assert preview["rows"][0]["paket"] == "A"
+
+
+def test_student_template_structure_and_guide_sheet(tmp_path):
+    students = StudentService(tmp_path / "tmpl.db")
+    students.add_field("Nama Orang Tua")
+    content = student_template(students.fields(True))
+    wb = load_workbook(BytesIO(content), data_only=True)
+
+    assert wb.sheetnames == ["Data Anak", "Panduan Pengisian"]
+    sheet = wb["Data Anak"]
+    assert sheet.freeze_panes == "A2"
+
+    headers = [cell.value for cell in sheet[1]]
+    assert headers == ["Nomor", "Nama", "Paket", "Nama Orang Tua"]
+
+    # Periksa baris contoh pengisian
+    row2 = [cell.value for cell in sheet[2]]
+    row3 = [cell.value for cell in sheet[3]]
+    assert row2[0] == 1
+    assert "Ahmad Fauzi" in row2[1]
+    assert "(Contoh)" in row2[1]
+    assert row2[2] == "A"
+
+    assert row3[0] == 2
+    assert "Fatimah" in row3[1]
+    assert "(Contoh)" in row3[1]
+    assert row3[2] == "B"
+
+    # Periksa sheet Panduan Pengisian
+    guide = wb["Panduan Pengisian"]
+    guide_text = "\n".join(str(cell.value) for row in guide.iter_rows() for cell in row if cell.value)
+    assert "PANDUAN PENGISIAN TEMPLATE EXCEL DATA ANAK" in guide_text
+    assert "Sistem Presensi TPA Ulul Albab" in guide_text
+    assert "Paket A" in guide_text
+    assert "Paket B" in guide_text
+    assert "Daftarkan RFID" in guide_text
+    assert "Scanner USB" in guide_text
+
+
+def test_preview_students_paket_and_number_validation(tmp_path):
+    students = StudentService(tmp_path / "valid.db")
+    fields = students.fields(True)
+
+    wb = load_workbook(BytesIO(student_template(fields)))
+    sheet = wb["Data Anak"]
+    # Baris contoh otomatis dilewati oleh parser
+    sheet.append([3, "Murid Paket A Biasa", "A"])
+    sheet.append([4, "Murid Paket B Full Day", "Paket B"])
+    sheet.append([5, "Murid Non-Integer", "A"])
+    # Ganti nomor baris ke-5 menjadi tidak valid
+    sheet.cell(row=6, column=1, value="1.5")
+    sheet.append([3, "Murid Nomor Duplikat", "B"])
+
+    bio = BytesIO()
+    wb.save(bio)
+
+    preview = preview_students(bio.getvalue(), fields)
+    assert len(preview["rows"]) == 2
+    assert preview["rows"][0]["nama"] == "Murid Paket A Biasa"
+    assert preview["rows"][0]["paket"] == "A"
+    assert preview["rows"][1]["nama"] == "Murid Paket B Full Day"
+    assert preview["rows"][1]["paket"] == "B"
+
+    assert any("bilangan bulat" in p for p in preview["problems"])
+    assert any("nomor absen duplikat" in p for p in preview["problems"])
+

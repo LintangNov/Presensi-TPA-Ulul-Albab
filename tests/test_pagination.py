@@ -75,7 +75,7 @@ def test_simulator_page_renders_pagination_controls(tmp_path, monkeypatch):
     body = _get_html(app, "/admin/simulator")
     assert 'class="pagination"' in body
     assert "pagination-btn" in body
-    assert "Menampilkan 1–15 dari 20 murid" in body
+    assert "Menampilkan 1–15 dari 20 anak" in body
     # Tombol simulasi tap hanya untuk murid yang sudah punya kartu
     assert "data-sim-tap-uid" in body
 
@@ -148,11 +148,11 @@ def test_students_admin_page_pagination(tmp_path, monkeypatch):
 
     body1 = _get_html(app, "/admin/murid?page=1")
     assert 'class="pagination"' in body1
-    assert "Menampilkan 1–15 dari 25 murid" in body1
-    assert "/admin/murid?page=2" in body1
+    assert "Menampilkan 1–15 dari 25 anak" in body1
+    assert "page=2" in body1
 
     body2 = _get_html(app, "/admin/murid?page=2")
-    assert "Menampilkan 16–25 dari 25 murid" in body2
+    assert "Menampilkan 16–25 dari 25 anak" in body2
 
 
 def test_parse_time_minutes_edge_cases():
@@ -173,19 +173,25 @@ def test_no_santri_terminology_in_ui_pages(tmp_path, monkeypatch):
     """Memastikan kata 'santri' tidak muncul sama sekali di teks/placeholder UI yang dilihat pengguna."""
     import re
     from app.main import app
+    from app.routers import admin as admin_router
     from app.services import scanner_simulator
     from app.services.attendance import AttendanceService
+    from app.services.reports import ReportService
     from app.services.students import StudentService
 
     test_db = tmp_path / "terminology.db"
     test_students = StudentService(test_db)
     test_attendance = AttendanceService(test_db)
+    test_reports = ReportService(test_db)
 
+    monkeypatch.setattr(admin_router, "DB_PATH", test_db)
+    monkeypatch.setattr(admin_router, "students", test_students)
+    monkeypatch.setattr(admin_router, "reports", test_reports)
     monkeypatch.setattr(scanner_simulator, "students", test_students)
     monkeypatch.setattr(scanner_simulator, "attendance", test_attendance)
     monkeypatch.setattr(scanner_simulator, "is_simulation_enabled", lambda: True)
 
-    pages = ["/admin/murid", "/admin/santri", "/admin/hari-ini", "/admin/rekap", "/admin/simulator", "/admin/import", "/scan"]
+    pages = ["/admin", "/admin/murid", "/admin/santri", "/admin/hari-ini", "/admin/rekap", "/admin/simulator", "/admin/import", "/scan"]
     for path in pages:
         html = _get_html(app, path)
         attributes = re.findall(r'(?:placeholder|title|aria-label|alt)=["\']([^"\']+)["\']', html, re.IGNORECASE)

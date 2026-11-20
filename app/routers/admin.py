@@ -179,7 +179,7 @@ async def save_manual(
     request: Request,
     student_id: int = Form(...),
     tanggal: str = Form(...),
-    status: str = Form(...),
+    status: str = Form("Hadir"),
     waktu: str = Form(""),
     catatan: str = Form(""),
     waktu_pulang: str = Form(""),
@@ -191,8 +191,10 @@ async def save_manual(
     nama_penjemput_lainnya: str = Form(""),
     alasan_tanpa_kartu: str = Form(""),
     alasan_penjemputan_tanpa_kartu: str = Form(""),
+    return_to: str = Form(""),
 ):
     local_only(request)
+    target_url = "/admin" if return_to == "dashboard" else "/admin/hari-ini"
     # Normalisasi format tanggal DD/MM/YYYY ke YYYY-MM-DD jika diperlukan
     clean_tanggal = tanggal.strip()
     if "/" in clean_tanggal:
@@ -224,8 +226,8 @@ async def save_manual(
         )
     except ValueError as exc:
         logging.getLogger("absensi_tpa").warning("Gagal menyimpan absensi manual: %s", exc)
-        return RedirectResponse("/admin/hari-ini", status_code=303)
-    return RedirectResponse("/admin/hari-ini", status_code=303)
+        return RedirectResponse(target_url, status_code=303)
+    return RedirectResponse(target_url, status_code=303)
 
 
 @router.post("/admin/absensi-manual/{attendance_id}/hapus")
@@ -242,13 +244,14 @@ async def report_page(
     sampai: str = "",
     student_id: int | None = None,
     santri_id: int | None = None,
+    anak_id: int | None = None,
     status: str = "",
 ):
     local_only(request)
     today = datetime.now().astimezone().date().isoformat()
     mulai = mulai or today
     sampai = sampai or today
-    active_student_id = student_id if student_id is not None else santri_id
+    active_student_id = student_id if student_id is not None else (anak_id if anak_id is not None else santri_id)
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="admin/reports.html",
@@ -273,13 +276,14 @@ async def export_report(
     sampai: str = "",
     student_id: int | None = None,
     santri_id: int | None = None,
+    anak_id: int | None = None,
     status: str = "",
 ):
     local_only(request)
     today = datetime.now().astimezone().date().isoformat()
     mulai = mulai or today
     sampai = sampai or today
-    active_student_id = student_id if student_id is not None else santri_id
+    active_student_id = student_id if student_id is not None else (anak_id if anak_id is not None else santri_id)
     content = export_workbook(
         reports.attendance_rows(mulai, sampai, active_student_id, status or None),
         reports.summary(mulai, sampai, active_student_id),
@@ -299,7 +303,12 @@ async def import_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="admin/import.html",
-        context=context(request, title="Impor Data Murid", preview=None),
+        context=context(
+            request,
+            title="Impor Data Anak",
+            preview=None,
+            custom_fields=students.fields(active_only=True),
+        ),
     )
 
 
@@ -309,7 +318,7 @@ async def import_template(request: Request):
     return Response(
         content=student_template(students.fields(active_only=True)),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="template_murid.xlsx"'},
+        headers={"Content-Disposition": 'attachment; filename="template_anak.xlsx"'},
     )
 
 
@@ -347,7 +356,13 @@ async def import_preview(request: Request, file: UploadFile = File(...)):
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="admin/import.html",
-        context=context(request, title="Pratinjau Impor", preview=preview, token=token),
+        context=context(
+            request,
+            title="Pratinjau Impor",
+            preview=preview,
+            token=token,
+            custom_fields=students.fields(active_only=True),
+        ),
     )
 
 
@@ -359,15 +374,27 @@ async def confirm_import(request: Request, token: str = Form(...)):
     if not preview:
         raise HTTPException(400, "Pratinjau impor sudah tidak berlaku atau kedaluwarsa.")
     for row in preview["rows"]:
-        students.save_student(None, row["nama"], row["nomor_urut"], row["extra_data"])
-    return RedirectResponse("/admin/murid", status_code=303)
+        students.save_student(
+            None,
+            row["nama"],
+            row["nomor_urut"],
+            row["extra_data"],
+            paket=row.get("paket", "A"),
+        )
+    return RedirectResponse("/admin/anak", status_code=303)
 
 
 def student_redirect(request: Request) -> RedirectResponse:
-    dest = "/admin/murid" if request.url.path.startswith("/admin/murid") else "/admin/santri"
+    if request.url.path.startswith("/admin/murid"):
+        dest = "/admin/murid"
+    elif request.url.path.startswith("/admin/santri"):
+        dest = "/admin/santri"
+    else:
+        dest = "/admin/anak"
     return RedirectResponse(dest, status_code=303)
 
 
+@router.get("/admin/anak", response_class=HTMLResponse)
 @router.get("/admin/santri", response_class=HTMLResponse)
 @router.get("/admin/murid", response_class=HTMLResponse)
 async def student_page(request: Request, q: str = "", page: int = 1):
@@ -398,6 +425,7 @@ async def student_page(request: Request, q: str = "", page: int = 1):
     )
 
 
+@router.post("/admin/anak")
 @router.post("/admin/santri")
 @router.post("/admin/murid")
 async def add_student(
@@ -414,6 +442,7 @@ async def add_student(
     return student_redirect(request)
 
 
+@router.post("/admin/anak/{student_id}")
 @router.post("/admin/santri/{student_id}")
 @router.post("/admin/murid/{student_id}")
 async def edit_student(
@@ -431,28 +460,31 @@ async def edit_student(
     return student_redirect(request)
 
 
+@router.post("/admin/anak/{student_id}/hapus")
 @router.post("/admin/santri/{student_id}/hapus")
 @router.post("/admin/murid/{student_id}/hapus")
 async def delete_student(request: Request, student_id: int):
     local_only(request)
     student = students.get_student(student_id)
     if not student:
-        raise HTTPException(404, "Murid tidak ditemukan.")
+        raise HTTPException(404, "Anak tidak ditemukan.")
     students.delete_student(student_id)
     return student_redirect(request)
 
 
+@router.post("/admin/anak/{student_id}/aktif")
 @router.post("/admin/santri/{student_id}/aktif")
 @router.post("/admin/murid/{student_id}/aktif")
 async def toggle_student(request: Request, student_id: int):
     local_only(request)
     student = students.get_student(student_id)
     if not student:
-        raise HTTPException(404, "Murid tidak ditemukan.")
+        raise HTTPException(404, "Anak tidak ditemukan.")
     students.set_active(student_id, not student["aktif"])
     return student_redirect(request)
 
 
+@router.post("/api/admin/anak/{student_id}/daftar-kartu")
 @router.post("/api/admin/santri/{student_id}/daftar-kartu")
 @router.post("/api/admin/murid/{student_id}/daftar-kartu")
 async def register_card(request: Request, student_id: int):
@@ -466,6 +498,7 @@ async def register_card(request: Request, student_id: int):
         raise HTTPException(409, str(exc)) from exc
 
 
+@router.post("/api/admin/anak/{student_id}/kartu/{slot}/hapus")
 @router.post("/api/admin/santri/{student_id}/kartu/{slot}/hapus")
 @router.post("/api/admin/murid/{student_id}/kartu/{slot}/hapus")
 async def delete_card_endpoint(request: Request, student_id: int, slot: int):

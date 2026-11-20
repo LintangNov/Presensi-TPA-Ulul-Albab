@@ -18,8 +18,8 @@ attendance = AttendanceService(DB_PATH)
 students = StudentService(DB_PATH)
 
 TEST_CARDS = [
-    {"uid": "CARD-01", "label": "Kartu Uji Paket A", "paket": "A", "description": "Murid Paket A (Half Day)"},
-    {"uid": "CARD-02", "label": "Kartu Uji Paket B", "paket": "B", "description": "Murid Paket B (Full Day)"},
+    {"uid": "CARD-01", "label": "Kartu Uji Paket A", "paket": "A", "description": "Anak Paket A (Half Day)"},
+    {"uid": "CARD-02", "label": "Kartu Uji Paket B", "paket": "B", "description": "Anak Paket B (Full Day)"},
     {"uid": "CARD-99", "label": "Kartu Tidak Dikenal", "paket": "-", "description": "UID yang belum terdaftar"},
 ]
 
@@ -64,7 +64,7 @@ def simulate_tap(uid: str) -> dict[str, Any]:
 
 
 def register_simulator_card(student_id: int, uid: str, slot: int = 1) -> dict[str, Any]:
-    """Daftarkan kartu simulasi ke murid."""
+    """Daftarkan kartu simulasi ke anak."""
     return students.register_card(student_id, uid, slot=slot)
 
 
@@ -73,5 +73,5 @@ def get_all_students() -> list[dict[str, Any]]:
 
 
 def get_students_page(page: int = 1, per_page: int = 15) -> tuple[list[dict[str, Any]], int]:
-    """Ambil satu halaman data murid + total baris (query di level SQL)."""
+    """Ambil satu halaman data anak + total baris (query di level SQL)."""
     return students.list_students_paginated("", page, per_page)

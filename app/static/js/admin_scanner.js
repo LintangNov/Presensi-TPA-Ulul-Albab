@@ -95,8 +95,8 @@
 
       // Tampilkan toast notifikasi di admin
       const badgeType = result.hasil === "berhasil" || result.hasil === "pulang" ? "success" :
-                        result.hasil === "denda" ? "danger" :
-                        result.hasil === "duplikat" ? "warning" : "error";
+        result.hasil === "denda" ? "danger" :
+          result.hasil === "duplikat" ? "warning" : "error";
       const infoNama = result.nama ? `[${result.nama}] ` : "";
       showAdminToast(`${infoNama}${result.pesan}`, badgeType);
 
@@ -115,9 +115,9 @@
     const timeNow = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     const nama = result.nama || uid;
     const statusLabel = result.hasil === "berhasil" ? "Masuk" :
-                        result.hasil === "pulang" ? "Pulang" :
-                        result.hasil === "denda" ? "Denda" :
-                        result.hasil === "duplikat" ? "Sudah Absen" : result.hasil;
+      result.hasil === "pulang" ? "Pulang" :
+        result.hasil === "denda" ? "Denda" :
+          result.hasil === "duplikat" ? "Sudah Absen" : result.hasil;
     item.innerHTML = `<strong>${timeNow}</strong> <span>${nama}</span> <span class="badge ${result.hasil}">${statusLabel}</span>`;
     feed.prepend(item);
     while (feed.children.length > 5) feed.lastElementChild.remove();
@@ -203,8 +203,8 @@
         setScannerActive(e.target.checked);
         showAdminToast(
           e.target.checked
-            ? "Mode Scanner DIAKTIFKAN. Scanner siap menerima tap kartu."
-            : "Mode Scanner DINONAKTIFKAN. Formulir dapat diedit.",
+            ? "Mode Scanner DIAKTIFKAN"
+            : "Mode Scanner DINONAKTIFKAN",
           e.target.checked ? "success" : "info"
         );
       });

@@ -39,12 +39,12 @@
     <span>Daftarkan Kartu Simulasi</span>
   </div>
   <div class="settings-card-subtitle">
-    Pasangkan UID simulasi ke murid. Setelah kartu terpasang, gunakan tombol "Simulasikan Tap" untuk menguji absensi.
+    Pasangkan UID simulasi ke anak. Setelah kartu terpasang, gunakan tombol "Simulasikan Tap" untuk menguji absensi.
   </div>
   <form id="register-simulator-card-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
-    <label>Murid
+    <label>Anak
       <select name="student_id" id="sim-student-select" required>
-        <option value="">-- Pilih Murid --</option>
+        <option value="">-- Pilih Anak --</option>
         {% for student in (all_students if all_students is defined and all_students else students) %}
         <option value="{{ student.id }}" data-nama="{{ student.nama }}" data-uid="{{ student.rfid_uid or '' }}">
           {{ student.nama }}{% if student.nomor_urut %} (No. {{ student.nomor_urut }}){% endif %}
@@ -70,14 +70,14 @@
   </form>
 </div>
 
-<!-- Tabel Murid (dengan pagination) -->
+<!-- Tabel Anak (dengan pagination) -->
 <div class="settings-card" style="margin-bottom: 1.5rem;">
   <div class="settings-card-title">
-    <span>Daftar Murid</span>
+    <span>Daftar Anak</span>
   </div>
   <div class="settings-card-subtitle">
-    Pilih murid lalu tempelkan UID simulasi untuk menguji alur absensi.
-    {% if total_students %}Total {{ total_students }} murid.{% else %}Belum ada data murid.{% endif %}
+    Pilih anak lalu tempelkan UID simulasi untuk menguji alur absensi.
+    {% if total_students %}Total {{ total_students }} anak.{% else %}Belum ada data anak.{% endif %}
   </div>
 
   <div style="margin-top: 1rem;">
@@ -86,7 +86,7 @@
       <thead>
         <tr>
           <th style="width: 60px;">No</th>
-          <th>Nama Murid</th>
+          <th>Nama Anak</th>
           <th>Paket</th>
           <th>RFID UID</th>
           <th>Status</th>
@@ -149,7 +149,7 @@
                 data-sim-tap-uid="{{ student.rfid_uid or '' }}"
                 data-sim-tap-nama="{{ student.nama }}"
                 data-sim-tap-label="Simulasikan Tap"
-                title="Simulasikan tap kartu untuk murid ini"
+                title="Simulasikan tap kartu untuk anak ini"
                 {% if not student.rfid_uid %}disabled{% endif %}
               >
                 Simulasikan Tap
@@ -161,7 +161,7 @@
                 data-sim-select-student="{{ student.id }}"
                 data-sim-select-name="{{ student.nama }}"
                 data-sim-select-uid="{{ student.rfid_uid or '' }}"
-                title="Pilih murid ini pada form pendaftaran kartu"
+                title="Pilih anak ini pada form pendaftaran kartu"
               >
                 Pilih
               </button>
@@ -172,15 +172,15 @@
       </tbody>
     </table>
     {% else %}
-    <p class="empty-table-notice">Belum ada data murid. Tambahkan murid di menu "Data Murid" terlebih dahulu.</p>
+    <p class="empty-table-notice">Belum ada data anak. Tambahkan anak di menu "Data Anak" terlebih dahulu.</p>
     {% endif %}
   </div>
 
   <!-- Pagination -->
   {% if total_pages > 1 %}
-  <nav class="pagination" aria-label="Navigasi halaman murid">
+  <nav class="pagination" aria-label="Navigasi halaman anak">
     <span class="pagination-info">
-      Menampilkan {{ ((page - 1) * per_page) + 1 }}–{{ [page * per_page, total_students] | min }} dari {{ total_students }} murid
+      Menampilkan {{ ((page - 1) * per_page) + 1 }}–{{ [page * per_page, total_students] | min }} dari {{ total_students }} anak
     </span>
     <div class="pagination-links">
       {% if page > 1 %}
@@ -243,7 +243,7 @@
       return;
     }
     if (!uid) {
-      notify("Murid ini belum memiliki kartu RFID. Pasangkan kartu terlebih dahulu.", "warning");
+      notify("Anak ini belum memiliki kartu RFID. Pasangkan kartu terlebih dahulu.", "warning");
       return;
     }
     try {
@@ -278,7 +278,7 @@
     }
   }
 
-  // Tombol "Simulasikan Tap" pada tabel murid
+  // Tombol "Simulasikan Tap" pada tabel anak
   document.querySelectorAll("[data-sim-tap-uid]").forEach((button) => {
     button.addEventListener("click", () => {
       const uid = button.dataset.simTapUid;
@@ -298,12 +298,12 @@
     button.addEventListener("click", () => {
       if (studentSelect) studentSelect.value = button.dataset.simSelectStudent;
       if (uidInput && button.dataset.simSelectUid) uidInput.value = button.dataset.simSelectUid;
-      notify(`Murid ${button.dataset.simSelectName} dipilih.`, "info");
+      notify(`Anak ${button.dataset.simSelectName} dipilih.`, "info");
       if (uidInput) uidInput.focus();
     });
   });
 
-  // Isi otomatis UID saat murid dipilih dari dropdown
+  // Isi otomatis UID saat anak dipilih dari dropdown
   if (studentSelect) {
     studentSelect.addEventListener("change", () => {
       const option = studentSelect.selectedOptions[0];

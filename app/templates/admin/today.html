@@ -1,21 +1,24 @@
 {% extends "admin/base.html" %}
 {% block content %}
 <section class="today-page-container">
-  <div id="today-live-section" hx-get="/admin/hari-ini" hx-trigger="every 3s [!document.querySelector('#today-live-section details[open]') && !document.querySelector('#today-live-section input:focus, #today-live-section select:focus, #today-live-section textarea:focus')]" hx-select="#today-live-section" hx-target="#today-live-section" hx-swap="outerHTML">
+  <div id="today-live-section" hx-get="/admin/hari-ini"
+    hx-trigger="every 3s [!document.querySelector('#edit-attendance-dialog[open]') && !document.querySelector('#today-live-section input:focus, #today-live-section select:focus, #today-live-section textarea:focus')]"
+    hx-select="#today-live-section" hx-target="#today-live-section" hx-swap="outerHTML">
     <h2>Absensi Hari Ini</h2>
     <div class="summary-grid">
-      <article><strong>{{ present_count }} dari {{ active_count }}</strong><span>murid hadir masuk</span></article>
+      <article><strong>{{ present_count }} dari {{ active_count }}</strong><span>anak hadir masuk</span></article>
       <article><strong style="color: #2b6cb0;">{{ picked_up_count }}</strong><span>sudah dijemput</span></article>
-      <article><strong class="{% if denda_count > 0 %}text-danger{% else %}text-muted-2{% endif %}">{{ denda_count }}</strong><span>denda penjemputan</span></article>
+      <article><strong class="{% if denda_count > 0 %}text-danger{% else %}text-muted-2{% endif %}">{{ denda_count
+          }}</strong><span>denda penjemputan</span></article>
       <article><strong>{{ absent|length }}</strong><span>belum hadir</span></article>
     </div>
 
     <h3>Belum hadir</h3>
     <ul>
       {% for row in absent %}
-        <li>{{ row.nomor_urut or "-" }} - {{ row.nama }} ({{ "Paket A" if row.paket == 'A' else "Paket B" }})</li>
+      <li>{{ row.nomor_urut or "-" }} - {{ row.nama }} ({{ "Paket A" if row.paket == 'A' else "Paket B" }})</li>
       {% else %}
-        <li>Semua murid aktif sudah memiliki catatan absensi hari ini.</li>
+      <li>Semua anak aktif sudah memiliki catatan absensi hari ini.</li>
       {% endfor %}
     </ul>
 
@@ -25,7 +28,7 @@
       <thead>
         <tr>
           <th style="width: 50px;">No</th>
-          <th>Nama Murid</th>
+          <th>Nama Anak</th>
           <th>Paket</th>
           <th>Jam Masuk</th>
           <th>Jam Pulang</th>
@@ -46,94 +49,66 @@
           <td>
             {{ row.nama_pengantar or "-" }}
             {% if row.alasan_tanpa_kartu %}
-              <div style="font-size: 0.78rem; color: #4a5568; margin-top: 0.2rem; background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;" title="Alasan masuk tanpa kartu">
-                Kartu: <em>{{ row.alasan_tanpa_kartu }}</em>
-              </div>
+            <div
+              style="font-size: 0.78rem; color: #4a5568; margin-top: 0.2rem; background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;"
+              title="Alasan masuk tanpa kartu">
+              Kartu: <em>{{ row.alasan_tanpa_kartu }}</em>
+            </div>
             {% endif %}
           </td>
           <td>
             {{ row.nama_penjemput or "-" }}
             {% if row.alasan_penjemputan_tanpa_kartu %}
-              <div style="font-size: 0.78rem; color: #4a5568; margin-top: 0.2rem; background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;" title="Alasan penjemputan tanpa kartu">
-                Kartu: <em>{{ row.alasan_penjemputan_tanpa_kartu }}</em>
-              </div>
-            {% elif row.alasan_tanpa_kartu and not row.alasan_penjemputan_tanpa_kartu and row.waktu_pulang and not row.nama_pengantar %}
-              <div style="font-size: 0.78rem; color: #4a5568; margin-top: 0.2rem; background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;" title="Alasan penjemputan tanpa kartu">
-                Kartu: <em>{{ row.alasan_tanpa_kartu }}</em>
-              </div>
+            <div
+              style="font-size: 0.78rem; color: #4a5568; margin-top: 0.2rem; background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;"
+              title="Alasan penjemputan tanpa kartu">
+              Kartu: <em>{{ row.alasan_penjemputan_tanpa_kartu }}</em>
+            </div>
+            {% elif row.alasan_tanpa_kartu and not row.alasan_penjemputan_tanpa_kartu and row.waktu_pulang and not
+            row.nama_pengantar %}
+            <div
+              style="font-size: 0.78rem; color: #4a5568; margin-top: 0.2rem; background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-block;"
+              title="Alasan penjemputan tanpa kartu">
+              Kartu: <em>{{ row.alasan_tanpa_kartu }}</em>
+            </div>
             {% endif %}
           </td>
           <td>
             {% if row.status_pulang %}
-              {% if "Denda" in row.status_pulang %}
-                <span class="badge error" style="font-size: 0.8rem;">⚠️ {{ row.status_pulang }} ({{ row.denda_menit }} mnt)</span>
-              {% else %}
-                <span class="badge success" style="font-size: 0.8rem;">✓ {{ row.status_pulang }}</span>
-              {% endif %}
+            {% if "Denda" in row.status_pulang %}
+            <span class="badge error" style="font-size: 0.8rem;">⚠️ {{ row.status_pulang }} ({{ row.denda_menit }}
+              mnt)</span>
             {% else %}
-              <span style="color: #a0aec0; font-size: 0.85rem;">Belum pulang</span>
+            <span class="badge success" style="font-size: 0.8rem;">✓ {{ row.status_pulang }}</span>
+            {% endif %}
+            {% else %}
+            <span style="color: #a0aec0; font-size: 0.85rem;">Belum pulang</span>
             {% endif %}
           </td>
-          <td>
+          <td style="white-space: nowrap;">
             {% if row.absensi_id and row.sumber == "manual" %}
-            <details>
-              <summary class="btn-sm btn-secondary" style="cursor: pointer;">Ubah</summary>
-              <form method="post" action="/admin/absensi-manual">
-                <input type="hidden" name="student_id" value="{{ row.id }}">
-                <label>Tanggal (DD/MM/YYYY)
-                  <input type="text" name="tanggal" value="{{ row.tanggal }}" placeholder="DD/MM/YYYY" maxlength="10">
-                </label>
-                <label>Jam Masuk (Format 24 Jam: 00.00 - 23.59)
-                  <input type="text" name="waktu" class="input-jam-24" value="{{ row.waktu or '' }}" placeholder="07.00" maxlength="5">
-                </label>
-                <label>Jam Pulang (Format 24 Jam: 00.00 - 23.59)
-                  <input type="text" name="waktu_pulang" class="input-jam-24" value="{{ row.waktu_pulang or '' }}" placeholder="13.00" maxlength="5">
-                </label>
-                <label>Status Pulang <input name="status_pulang" value="{{ row.status_pulang or '' }}" placeholder="Tepat Waktu / Denda Keterlambatan"></label>
-                
-                <div class="form-group-combo dropdown-with-custom">
-                  <label>Nama Pengantar</label>
-                  <select name="nama_pengantar">
-                    <option value=""></option>
-                    <option value="Ayah" {% if row.nama_pengantar == "Ayah" %}selected{% endif %}>Ayah</option>
-                    <option value="Ibu" {% if row.nama_pengantar == "Ibu" %}selected{% endif %}>Ibu</option>
-                    <option value="Lainnya" {% if row.nama_pengantar not in ('Ayah', 'Ibu', '', None) or row.nama_pengantar == 'Lainnya' %}selected{% endif %}>Lainnya</option>
-                  </select>
-                  <input type="text" class="input-custom-text" name="nama_pengantar_lainnya"
-                    value="{{ row.nama_pengantar if row.nama_pengantar not in ('Ayah', 'Ibu', 'Lainnya', None) else '' }}"
-                    placeholder="Ketik nama pengantar...">
-                </div>
-
-                <div class="form-group-combo dropdown-with-custom">
-                  <label>Nama Penjemput</label>
-                  <select name="nama_penjemput">
-                    <option value=""></option>
-                    <option value="Ayah" {% if row.nama_penjemput == "Ayah" %}selected{% endif %}>Ayah</option>
-                    <option value="Ibu" {% if row.nama_penjemput == "Ibu" %}selected{% endif %}>Ibu</option>
-                    <option value="Lainnya" {% if row.nama_penjemput not in ('Ayah', 'Ibu', '', None) or row.nama_penjemput == 'Lainnya' %}selected{% endif %}>Lainnya</option>
-                  </select>
-                  <input type="text" class="input-custom-text" name="nama_penjemput_lainnya"
-                    value="{{ row.nama_penjemput if row.nama_penjemput not in ('Ayah', 'Ibu', 'Lainnya', None) else '' }}"
-                    placeholder="Ketik nama penjemput...">
-                </div>
-
-                <label>Alasan Masuk Tanpa Kartu (Opsional)
-                  <input type="text" name="alasan_tanpa_kartu" value="{{ row.alasan_tanpa_kartu or '' }}" placeholder="Alasan masuk jika tanpa kartu">
-                </label>
-
-                <label>Alasan Penjemputan Tanpa Kartu (Opsional)
-                  <input type="text" name="alasan_penjemputan_tanpa_kartu" value="{{ row.alasan_penjemputan_tanpa_kartu or '' }}" placeholder="Alasan penjemputan jika tanpa kartu">
-                </label>
-
-                <label>Catatan
-                  <input name="catatan" value="{{ row.catatan or '' }}">
-                </label>
-                <button type="submit" class="btn-sm">Simpan perubahan</button>
+            <div class="row-action-btns">
+              <button type="button" class="btn-sm btn-secondary btn-open-edit-modal" data-student-id="{{ row.id }}"
+                data-student-name="{{ row.nama }}" data-student-nomor="{{ row.nomor_urut or '-' }}"
+                data-student-paket="{{ 'Paket A (Half Day)' if row.paket == 'A' else 'Paket B (Full Day)' }}"
+                data-tanggal="{{ row.tanggal }}" data-status="{{ row.status or 'Hadir' }}"
+                data-waktu="{{ row.waktu or '' }}" data-waktu-pulang="{{ row.waktu_pulang or '' }}"
+                data-status-pulang="{{ row.status_pulang or '' }}" data-denda-menit="{{ row.denda_menit or 0 }}"
+                data-nama-pengantar="{{ row.nama_pengantar or '' }}"
+                data-nama-penjemput="{{ row.nama_penjemput or '' }}"
+                data-alasan-tanpa-kartu="{{ row.alasan_tanpa_kartu or '' }}"
+                data-alasan-penjemputan-tanpa-kartu="{{ row.alasan_penjemputan_tanpa_kartu or '' }}"
+                data-catatan="{{ row.catatan or '' }}" data-absensi-id="{{ row.absensi_id }}">
+                Ubah
+              </button>
+              <form method="post" action="/admin/absensi-manual/{{ row.absensi_id }}/hapus"
+                style="margin: 0; display: inline;"
+                onsubmit="return confirm('Apakah Anda yakin ingin menghapus catatan absensi manual ini?');">
+                <button type="submit" class="btn-sm btn-danger">Hapus</button>
               </form>
-            </details>
-            <form method="post" action="/admin/absensi-manual/{{ row.absensi_id }}/hapus" style="display: inline;">
-              <button type="submit" class="btn-sm btn-danger">Hapus manual</button>
-            </form>
+            </div>
+            {% else %}
+            <span style="color: #a0aec0; font-size: 0.85rem;">-</span>
             {% endif %}
           </td>
         </tr>
@@ -141,218 +116,354 @@
       </tbody>
     </table>
     {% else %}
-    <p class="empty-table-notice">Data absensi hari ini belum ada. Catat absensi manual di bawah atau tap kartu murid pada reader USB.</p>
+    <p class="empty-table-notice">Data absensi hari ini belum ada. Tap kartu anak pada reader USB atau gunakan tombol
+      "Catat Presensi Manual" di Dashboard.</p>
     {% endif %}
   </div>
 
-  <div style="margin-top: 2.5rem;">
-    <h3 style="margin-bottom: 0.75rem;">Catat Presensi Manual</h3>
-    <form method="post" action="/admin/absensi-manual" class="manual-form" id="form-catat-manual">
-      <!-- Murid -->
-      <label>Murid
-        <select name="student_id" required>
-          {% for row in rows %}
-            {% if row.aktif %}
-              <option value="{{ row.id }}">{{ row.nama }} ({{ "Paket A" if row.paket == 'A' else "Paket B" }})</option>
-            {% endif %}
-          {% endfor %}
-        </select>
-      </label>
+  <!-- Modal Popup Ubah Presensi Anak (Tengah Layar) -->
+  <dialog id="edit-attendance-dialog">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text);">Ubah Presensi Anak</h3>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: var(--text-muted);">
+            Perbarui data kehadiran, waktu, atau penjemputan anak.
+          </p>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-edit-modal" aria-label="Tutup Dialog">✕</button>
+      </div>
 
-      <!-- Tanggal Presensi: 1 Kolom Ramping DD/MM/YYYY dengan Ikon Kalender Rata Kanan -->
-      <label>Tanggal
-        <div style="position: relative; display: flex; align-items: center; width: 100%;">
-          <input 
-            type="text" 
-            id="manual-tanggal-display" 
-            name="tanggal"
-            placeholder="DD/MM/YYYY" 
-            maxlength="10" 
-            autocomplete="off"
-            value="{{ today_formatted }}"
-            style="width: 100%; padding-right: 2.75rem; font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 0;"
-            title="Ketik tanggal (DD/MM/YYYY) atau klik ikon kalender di kanan"
-            required
-          >
-          <button 
-            type="button" 
-            onclick="openCalendarPicker()" 
-            title="Buka kalender visual" 
-            aria-label="Pilih tanggal dari kalender"
-            style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 0.35rem; margin: 0; cursor: pointer; color: #718096; display: flex; align-items: center; justify-content: center; width: auto; height: auto;"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
+      <!-- Info Anak Badge -->
+      <div
+        style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.6rem 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-shrink: 0;">
+        <div>
+          <div id="edit-modal-student-name" style="font-size: 1.05rem; font-weight: 700; color: var(--text);">-</div>
+          <div id="edit-modal-student-meta" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem;">-
+          </div>
+        </div>
+        <span id="edit-modal-student-paket" class="badge info" style="font-size: 0.75rem;">-</span>
+      </div>
+
+      <form method="post" action="/admin/absensi-manual" id="form-edit-attendance" class="manual-modal-form">
+        <input type="hidden" name="student_id" id="edit-input-student-id">
+        <input type="hidden" name="denda_menit" id="edit-input-denda-menit" value="0">
+        <input type="hidden" name="return_to" value="/admin/hari-ini">
+
+        <div class="manual-modal-body">
+          <div class="manual-modal-grid">
+            <!-- Tanggal Presensi (DD/MM/YYYY) dengan Ikon Kalender Visual -->
+            <label>Tanggal
+              <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                <input type="text" id="edit-tanggal-display" name="tanggal" placeholder="DD/MM/YYYY" maxlength="10"
+                  autocomplete="off"
+                  style="width: 100%; padding-right: 2.75rem; font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 0;"
+                  title="Ketik tanggal (DD/MM/YYYY) atau klik ikon kalender di kanan" required>
+                <button type="button" id="btn-open-edit-calendar-picker" title="Buka kalender visual"
+                  aria-label="Pilih tanggal dari kalender"
+                  style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 0.35rem; margin: 0; cursor: pointer; color: #718096; display: flex; align-items: center; justify-content: center; width: auto; height: auto;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </button>
+              </div>
+            </label>
+
+            <!-- Status Kehadiran -->
+            <label>Status Hadir
+              <select name="status" id="edit-status-select">
+                <option value="Hadir">Hadir</option>
+                <option value="Izin">Izin</option>
+                <option value="Sakit">Sakit</option>
+                <option value="Alpha">Alpha</option>
+              </select>
+            </label>
+
+            <!-- Jam Masuk (24 Jam: 00.00 - 23.59) -->
+            <label>Jam Masuk (24 Jam)
+              <input type="text" name="waktu" id="edit-input-waktu" class="input-jam-24" placeholder="07.00"
+                maxlength="5" autocomplete="off"
+                style="font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0;"
+                title="Format 24 jam: 00.00 s/d 23.59">
+            </label>
+
+            <!-- Jam Pulang (24 Jam: 00.00 - 23.59) -->
+            <label>Jam Pulang (24 Jam)
+              <input type="text" name="waktu_pulang" id="edit-input-waktu-pulang" class="input-jam-24"
+                placeholder="13.00" maxlength="5" autocomplete="off"
+                style="font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0;"
+                title="Format 24 jam: 00.00 s/d 23.59">
+            </label>
+
+            <!-- Status Pulang -->
+            <label class="field-span-2">Status Pulang
+              <input type="text" name="status_pulang" id="edit-input-status-pulang"
+                placeholder="Tepat Waktu / Denda Keterlambatan">
+            </label>
+
+            <!-- Dropdown Pengantar dengan Teks Lainnya -->
+            <div class="form-group-combo dropdown-with-custom">
+              <label>Nama Pengantar</label>
+              <select name="nama_pengantar" id="edit-select-pengantar">
+                <option value="">-- Pilih Pengantar --</option>
+                <option value="Ayah">Ayah</option>
+                <option value="Ibu">Ibu</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+              <input type="text" class="input-custom-text" name="nama_pengantar_lainnya"
+                id="edit-input-pengantar-lainnya" placeholder="Ketik nama pengantar..."
+                style="display: none; margin-top: 0.35rem;">
+            </div>
+
+            <!-- Dropdown Penjemput dengan Teks Lainnya -->
+            <div class="form-group-combo dropdown-with-custom">
+              <label>Nama Penjemput</label>
+              <select name="nama_penjemput" id="edit-select-penjemput">
+                <option value="">-- Pilih Penjemput --</option>
+                <option value="Ayah">Ayah</option>
+                <option value="Ibu">Ibu</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+              <input type="text" class="input-custom-text" name="nama_penjemput_lainnya"
+                id="edit-input-penjemput-lainnya" placeholder="Ketik nama penjemput..."
+                style="display: none; margin-top: 0.35rem;">
+            </div>
+
+            <!-- Alasan Masuk Tanpa Kartu (Opsional) -->
+            <label>Alasan Masuk Tanpa Kartu
+              <input type="text" name="alasan_tanpa_kartu" id="edit-input-alasan-tanpa-kartu"
+                placeholder="Cth: Kartu anak tertinggal">
+            </label>
+
+            <!-- Alasan Penjemputan Tanpa Kartu (Opsional) -->
+            <label>Alasan Penjemputan Tanpa Kartu
+              <input type="text" name="alasan_penjemputan_tanpa_kartu" id="edit-input-alasan-penjemputan-tanpa-kartu"
+                placeholder="Cth: Kartu penjemput tertinggal">
+            </label>
+
+            <!-- Catatan Tambahan -->
+            <label class="field-span-2">Catatan Tambahan
+              <input name="catatan" id="edit-input-catatan" placeholder="Catatan tambahan (opsional)...">
+            </label>
+          </div>
+        </div>
+
+        <!-- Tombol Aksi di Bagian Bawah (Pinned Footer) -->
+        <div class="modal-actions-bar">
+          <button type="button" class="btn-sm btn-secondary" id="btn-cancel-edit-modal">Batal</button>
+          <button type="submit" class="btn-sm btn-primary"
+            style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0 1.25rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
+            Simpan Perubahan
           </button>
         </div>
-      </label>
-
-      <!-- Jam Masuk (Format 24 Jam: 00.00 - 23.59) -->
-      <label>Jam Masuk (24 Jam)
-        <input 
-          type="text" 
-          name="waktu" 
-          class="input-jam-24" 
-          placeholder="07.00" 
-          maxlength="5" 
-          autocomplete="off"
-          style="font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0;"
-          title="Format 24 jam: 00.00 s/d 23.59"
-        >
-      </label>
-
-      <!-- Jam Pulang (Format 24 Jam: 00.00 - 23.59) -->
-      <label>Jam Pulang (24 Jam)
-        <input 
-          type="text" 
-          name="waktu_pulang" 
-          class="input-jam-24" 
-          placeholder="13.00" 
-          maxlength="5" 
-          autocomplete="off"
-          style="font-family: inherit; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.05em; margin-bottom: 0;"
-          title="Format 24 jam: 00.00 s/d 23.59"
-        >
-      </label>
-
-      <!-- Status Hadir -->
-      <label>Status Hadir
-        <select name="status">
-          <option>Hadir</option>
-          <option>Izin</option>
-          <option>Sakit</option>
-          <option>Alpha</option>
-        </select>
-      </label>
-
-      <!-- Dropdown Pengantar dengan Teks Lainnya Menyatu -->
-      <div class="form-group-combo dropdown-with-custom">
-        <label>Nama Pengantar</label>
-        <select name="nama_pengantar">
-          <option value=""></option>
-          <option value="Ayah">Ayah</option>
-          <option value="Ibu">Ibu</option>
-          <option value="Lainnya">Lainnya</option>
-        </select>
-        <input type="text" class="input-custom-text" name="nama_pengantar_lainnya" placeholder="Ketik nama pengantar..." style="display: none;">
-      </div>
-
-      <!-- Dropdown Penjemput dengan Teks Lainnya Menyatu -->
-      <div class="form-group-combo dropdown-with-custom">
-        <label>Nama Penjemput</label>
-        <select name="nama_penjemput">
-          <option value=""></option>
-          <option value="Ayah">Ayah</option>
-          <option value="Ibu">Ibu</option>
-          <option value="Lainnya">Lainnya</option>
-        </select>
-        <input type="text" class="input-custom-text" name="nama_penjemput_lainnya" placeholder="Ketik nama penjemput..." style="display: none;">
-      </div>
-
-      <!-- Alasan Masuk Tanpa Kartu (Opsional) -->
-      <label>Alasan Masuk Tanpa Kartu (Opsional)
-        <input type="text" name="alasan_tanpa_kartu" placeholder="Cth: Kartu murid tertinggal">
-      </label>
-
-      <!-- Alasan Penjemputan Tanpa Kartu (Opsional) -->
-      <label>Alasan Penjemputan Tanpa Kartu (Opsional)
-        <input type="text" name="alasan_penjemputan_tanpa_kartu" placeholder="Cth: Kartu penjemput tertinggal">
-      </label>
-
-      <!-- Catatan (Span 2 Kolom agar proporsional) -->
-      <label class="field-span-2">Catatan
-        <input name="catatan" placeholder="Catatan tambahan (opsional)...">
-      </label>
-
-      <!-- Tombol Aksi di Baris Penuh Tersendiri di Bawah Form Rata Kanan -->
-      <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #e2e8f0;">
-        <button type="submit" class="btn-save-manual" style="width: auto !important; min-width: 220px !important; height: 44px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 0.5rem !important; font-weight: 600 !important; font-size: 0.95rem !important; border-radius: 8px !important; background: #1a56db !important; color: #ffffff !important; border: none !important; cursor: pointer !important; box-shadow: 0 2px 4px rgba(26, 86, 219, 0.2) !important; margin: 0 !important;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-          Simpan Presensi Manual
-        </button>
-      </div>
-    </form>
-  </div>
+      </form>
+    </div>
+  </dialog>
 </section>
 
 <script>
-  // Helper Calendar Picker Mandiri
-  function openCalendarPicker() {
-    let picker = document.getElementById('standalone-native-picker');
-    if (!picker) {
-      picker = document.createElement('input');
-      picker.type = 'date';
-      picker.id = 'standalone-native-picker';
-      picker.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
-      document.body.appendChild(picker);
-      picker.addEventListener('change', () => {
-        if (picker.value) {
-          const parts = picker.value.split('-');
-          if (parts.length === 3) {
-            const displayInput = document.getElementById('manual-tanggal-display');
-            if (displayInput) {
-              displayInput.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
+  (() => {
+    const modal = document.querySelector("#edit-attendance-dialog");
+    const closeBtn = document.querySelector("#btn-close-edit-modal");
+    const cancelBtn = document.querySelector("#btn-cancel-edit-modal");
+    const calBtn = document.querySelector("#btn-open-edit-calendar-picker");
+    const dateInput = document.getElementById("edit-tanggal-display");
+
+    if (!modal) return;
+
+    function closeModal() {
+      modal.close();
+    }
+
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+
+    // Klik backdrop untuk menutup modal
+    modal.addEventListener("click", (e) => {
+      const rect = modal.getBoundingClientRect();
+      const isInDialog = (
+        rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
+        rect.left <= e.clientX && e.clientX <= rect.left + rect.width
+      );
+      if (!isInDialog) {
+        closeModal();
+      }
+    });
+
+    function formatToDDMMYYYY(dateStr) {
+      if (!dateStr) return "";
+      if (dateStr.includes("/")) return dateStr;
+      const parts = dateStr.trim().split("-");
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return dateStr;
+    }
+
+    function setDropdownWithCustom(selectEl, customInputEl, value) {
+      if (!selectEl || !customInputEl) return;
+      const val = (value || "").trim();
+      if (val === "Ayah" || val === "Ibu") {
+        selectEl.value = val;
+        customInputEl.style.display = "none";
+        customInputEl.value = "";
+      } else if (!val) {
+        selectEl.value = "";
+        customInputEl.style.display = "none";
+        customInputEl.value = "";
+      } else {
+        selectEl.value = "Lainnya";
+        customInputEl.style.display = "block";
+        customInputEl.value = val;
+      }
+    }
+
+    // Delegasi klik tombol Ubah pada baris tabel (tetap bekerja walau HTMX swap tabel)
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn-open-edit-modal");
+      if (!btn) return;
+
+      // Set Info Anak
+      const nameEl = document.getElementById("edit-modal-student-name");
+      const metaEl = document.getElementById("edit-modal-student-meta");
+      const paketEl = document.getElementById("edit-modal-student-paket");
+      if (nameEl) nameEl.textContent = btn.dataset.studentName || "Anak";
+      if (metaEl) metaEl.textContent = "Nomor Urut: " + (btn.dataset.studentNomor || "-");
+      if (paketEl) paketEl.textContent = btn.dataset.studentPaket || "-";
+
+      // Isi Nilai Input Form
+      const idInput = document.getElementById("edit-input-student-id");
+      if (idInput) idInput.value = btn.dataset.studentId || "";
+
+      const dendaInput = document.getElementById("edit-input-denda-menit");
+      if (dendaInput) dendaInput.value = btn.dataset.dendaMenit || "0";
+
+      const tanggalInput = document.getElementById("edit-tanggal-display");
+      if (tanggalInput) tanggalInput.value = formatToDDMMYYYY(btn.dataset.tanggal);
+
+      const statusSelect = document.getElementById("edit-status-select");
+      if (statusSelect) statusSelect.value = btn.dataset.status || "Hadir";
+
+      const waktuInput = document.getElementById("edit-input-waktu");
+      if (waktuInput) waktuInput.value = btn.dataset.waktu || "";
+
+      const waktuPulangInput = document.getElementById("edit-input-waktu-pulang");
+      if (waktuPulangInput) waktuPulangInput.value = btn.dataset.waktuPulang || "";
+
+      const statusPulangInput = document.getElementById("edit-input-status-pulang");
+      if (statusPulangInput) statusPulangInput.value = btn.dataset.statusPulang || "";
+
+      const catatanInput = document.getElementById("edit-input-catatan");
+      if (catatanInput) catatanInput.value = btn.dataset.catatan || "";
+
+      const alasanMasukInput = document.getElementById("edit-input-alasan-tanpa-kartu");
+      if (alasanMasukInput) alasanMasukInput.value = btn.dataset.alasanTanpaKartu || "";
+
+      const alasanPulangInput = document.getElementById("edit-input-alasan-penjemputan-tanpa-kartu");
+      if (alasanPulangInput) alasanPulangInput.value = btn.dataset.alasanPenjemputanTanpaKartu || "";
+
+      // Sinkronisasi Pengantar & Penjemput
+      setDropdownWithCustom(
+        document.getElementById("edit-select-pengantar"),
+        document.getElementById("edit-input-pengantar-lainnya"),
+        btn.dataset.namaPengantar
+      );
+
+      setDropdownWithCustom(
+        document.getElementById("edit-select-penjemput"),
+        document.getElementById("edit-input-penjemput-lainnya"),
+        btn.dataset.namaPenjemput
+      );
+
+      modal.showModal();
+    });
+
+    // Calendar Picker untuk Edit Modal
+    if (calBtn && dateInput) {
+      calBtn.addEventListener("click", () => {
+        let picker = document.getElementById("standalone-native-picker");
+        if (!picker) {
+          picker = document.createElement("input");
+          picker.type = "date";
+          picker.id = "standalone-native-picker";
+          picker.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;";
+          document.body.appendChild(picker);
+        }
+        picker.onchange = () => {
+          if (picker.value) {
+            const parts = picker.value.split("-");
+            if (parts.length === 3) {
+              dateInput.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
             }
           }
+        };
+
+        if (dateInput.value) {
+          const parts = dateInput.value.trim().split(/[\/\-\.]/);
+          if (parts.length === 3 && parts[2].length === 4) {
+            picker.value = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+          }
+        }
+
+        if (typeof picker.showPicker === "function") {
+          picker.showPicker();
+        } else {
+          picker.click();
         }
       });
     }
 
-    const currentDisplay = document.getElementById('manual-tanggal-display');
-    if (currentDisplay && currentDisplay.value) {
-      const parts = currentDisplay.value.trim().split(/[\/\-\.]/);
-      if (parts.length === 3 && parts[2].length === 4) {
-        picker.value = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-      }
+    // Format Auto-Slash DD/MM/YYYY saat mengetik
+    if (dateInput) {
+      dateInput.addEventListener("input", (e) => {
+        let val = e.target.value.replace(/[^\d]/g, "");
+        if (val.length > 2 && val.length <= 4) {
+          val = val.slice(0, 2) + "/" + val.slice(2);
+        } else if (val.length > 4) {
+          val = val.slice(0, 2) + "/" + val.slice(2, 4) + "/" + val.slice(4, 8);
+        }
+        e.target.value = val;
+      });
     }
 
-    if (typeof picker.showPicker === 'function') {
-      picker.showPicker();
-    } else {
-      picker.click();
-    }
-  }
-
-  // Format Auto-Slash DD/MM/YYYY saat mengetik
-  function setupDateInputMask() {
-    const input = document.getElementById('manual-tanggal-display');
-    if (!input || input.dataset.maskAttached) return;
-    input.dataset.maskAttached = 'true';
-
-    input.addEventListener('input', (e) => {
-      let val = e.target.value.replace(/[^\d]/g, '');
-      if (val.length > 2 && val.length <= 4) {
-        val = val.slice(0, 2) + '/' + val.slice(2);
-      } else if (val.length > 4) {
-        val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4, 8);
+    // Sinkronisasi dinamis dropdown custom saat user memilih opsi lain di edit modal
+    ["pengantar", "penjemput"].forEach((role) => {
+      const sel = document.getElementById(`edit-select-${role}`);
+      const inp = document.getElementById(`edit-input-${role}-lainnya`);
+      if (sel && inp) {
+        sel.addEventListener("change", () => {
+          if (sel.value === "Lainnya") {
+            inp.style.display = "block";
+            inp.focus();
+          } else {
+            inp.style.display = "none";
+            inp.value = "";
+          }
+        });
       }
-      e.target.value = val;
     });
-  }
 
-  // Format Auto-Dot Jam 24 Jam (00.00 - 23.59)
-  function setupTimeInputs24() {
-    document.querySelectorAll('.input-jam-24').forEach(input => {
-      if (input.dataset.timeAttached) return;
-      input.dataset.timeAttached = 'true';
-
-      input.addEventListener('input', (e) => {
-        let val = e.target.value.replace(/[^\d]/g, '');
+    // Format Auto-Dot Jam 24 Jam (00.00 - 23.59)
+    modal.querySelectorAll(".input-jam-24").forEach((input) => {
+      input.addEventListener("input", (e) => {
+        let val = e.target.value.replace(/[^\d]/g, "");
         if (val.length >= 2) {
           let jam = parseInt(val.slice(0, 2), 10);
           if (jam > 23) jam = 23;
-          let jamStr = String(jam).padStart(2, '0');
+          let jamStr = String(jam).padStart(2, "0");
           if (val.length > 2) {
             let mnt = parseInt(val.slice(2, 4), 10);
             if (mnt > 59) mnt = 59;
-            let mntStr = String(mnt).padStart(2, '0');
-            e.target.value = jamStr + '.' + mntStr;
+            let mntStr = String(mnt).padStart(2, "0");
+            e.target.value = jamStr + "." + mntStr;
           } else {
             e.target.value = jamStr;
           }
@@ -361,50 +472,6 @@
         }
       });
     });
-  }
-
-  function setupDropdownsWithCustom() {
-    document.querySelectorAll('.dropdown-with-custom').forEach(container => {
-      const select = container.querySelector('select');
-      const input = container.querySelector('.input-custom-text');
-      if (!select || !input || select.dataset.customAttached) return;
-      select.dataset.customAttached = 'true';
-
-      function sync() {
-        if (select.value === 'Lainnya') {
-          input.style.display = 'block';
-          input.focus();
-        } else {
-          input.style.display = 'none';
-          input.value = '';
-        }
-      }
-
-      if (select.value === 'Lainnya' || (input.value && select.value !== 'Ayah' && select.value !== 'Ibu')) {
-        select.value = 'Lainnya';
-        input.style.display = 'block';
-      } else {
-        input.style.display = 'none';
-      }
-
-      select.addEventListener('change', sync);
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    setupDropdownsWithCustom();
-    setupDateInputMask();
-    setupTimeInputs24();
-  });
-
-  document.body.addEventListener('htmx:afterSwap', () => {
-    setupDropdownsWithCustom();
-    setupDateInputMask();
-    setupTimeInputs24();
-  });
-
-  setupDropdownsWithCustom();
-  setupDateInputMask();
-  setupTimeInputs24();
+  })();
 </script>
 {% endblock %}

@@ -51,7 +51,7 @@
       badgeLabel = "SUDAH TERCATAT HARI INI";
     } else if (hasil === "tidak_dikenal" || hasil === "tidak_aktif") {
       badgeClass = "tv-badge-error";
-      badgeLabel = hasil === "tidak_dikenal" ? "KARTU BELUM TERDAFTAR" : "MURID NONAKTIF";
+      badgeLabel = hasil === "tidak_dikenal" ? "KARTU BELUM TERDAFTAR" : "ANAK NONAKTIF";
     }
 
     badgeEl.className = `tv-active-badge ${badgeClass}`;

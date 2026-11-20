@@ -1,13 +1,171 @@
 {% extends "admin/base.html" %}
 {% block content %}
-<h2>Impor Data Murid</h2>
-<p>Unduh template, isi kolom Nomor dan Nama, lalu unggah kembali. Data lama tidak ditimpa.</p>
-<p><a role="button" href="/admin/import/template.xlsx">Unduh template Excel</a></p>
-<form method="post" action="/admin/import" enctype="multipart/form-data"><input type="file" name="file" accept=".xlsx" required><button type="submit">Validasi dan pratinjau</button></form>
-{% if preview %}
-<h3>Pratinjau</h3>
-<p>{{ preview.rows|length }} baris siap disimpan, {{ preview.problems|length }} baris bermasalah.</p>
-{% if preview.problems %}<ul class="error-list">{% for problem in preview.problems %}<li>{{ problem }}</li>{% endfor %}</ul>{% endif %}
-{% if preview.rows %}<form method="post" action="/admin/import/konfirmasi"><input type="hidden" name="token" value="{{ token }}"><button type="submit">Konfirmasi simpan {{ preview.rows|length }} baris</button></form>{% endif %}
+<div class="settings-header-banner" style="margin-bottom: 1.5rem;">
+  <h2>Impor Data Anak</h2>
+  <p>Tambahkan data anak secara massal menggunakan berkas spreadsheet Excel (.xlsx).</p>
+</div>
+
+<div
+  style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+  <!-- Kartu 1: Unduh Template & Panduan -->
+  <div class="card"
+    style="background: #ffffff; border: 1px solid var(--border, #b3b5bb); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <h3 style="font-size: 1.15rem; margin-top: 0; margin-bottom: 0.75rem; color: #1a365d;">
+        1. Unduh Template Berpanduan
+      </h3>
+      <p style="font-size: 0.95rem; line-height: 1.5; color: #4a5568; margin-bottom: 1rem;">
+        Gunakan berkas template resmi yang sudah dilengkapi dengan lembar kerja <strong>Data Anak</strong> (dengan
+        dropdown pilihan Paket A / B dan contoh pengisian) serta lembar <strong>Panduan Pengisian</strong> lengkap.
+      </p>
+      <div
+        style="background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.88rem; color: #2b6cb0; margin-bottom: 1.25rem; line-height: 1.45;">
+        <strong>Catatan Kartu RFID:</strong> Kartu RFID fisik tidak diinput di Excel. Pendaftaran kartu fisik dilakukan
+        di menu <em>Data Anak</em> melalui tombol <em>Daftarkan RFID</em> dengan men-tap kartu ke alat Scanner USB.
+      </div>
+    </div>
+    <div>
+      <a role="button" class="btn-primary" href="/admin/import/template.xlsx"
+        style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; width: 100%; box-sizing: border-box; text-align: center; min-height: 44px; font-weight: 700;">
+        Unduh Template Excel (.xlsx)
+      </a>
+    </div>
+  </div>
+
+  <!-- Kartu 2: Unggah Berkas Excel -->
+  <div class="card"
+    style="background: #ffffff; border: 1px solid var(--border, #b3b5bb); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+    <div>
+      <h3 style="font-size: 1.15rem; margin-top: 0; margin-bottom: 0.75rem; color: #1a365d;">
+        2. Unggah & Validasi Berkas
+      </h3>
+      <p style="font-size: 0.95rem; line-height: 1.5; color: #4a5568; margin-bottom: 1rem;">
+        Setelah mengisi berkas template, simpan tetap dalam format <code>.xlsx</code> dan unggah di sini. Sistem akan
+        memeriksa kelengkapan nama, keunikan nomor absen, dan pilihan paket sebelum disimpan.
+      </p>
+    </div>
+    <form method="post" action="/admin/import" enctype="multipart/form-data" style="margin: 0;">
+      <label style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; display: block; color: #2d3748;">
+        Pilih File Excel
+        <input type="file" name="file" accept=".xlsx" required
+          style="margin-top: 0.35rem; width: 100%; box-sizing: border-box;">
+      </label>
+      <button type="submit" class="btn-primary"
+        style="margin-top: 0.75rem; margin-bottom: 0; width: 100%; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
+        🔍 Validasi dan Pratinjau Data
+      </button>
+    </form>
+  </div>
+</div>
+
+{% if preview is not none %}
+<div class="card"
+  style="background: #ffffff; border: 1px solid var(--border, #b3b5bb); border-radius: 12px; padding: 1.5rem; margin-top: 1rem;">
+  <div
+    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; border-bottom: 1px solid #edf2f7; padding-bottom: 0.75rem;">
+    <div>
+      <h3 style="font-size: 1.25rem; margin: 0; color: #1a365d;">Hasil Pratinjau Berkas</h3>
+      <p style="font-size: 0.9rem; color: #718096; margin: 0.25rem 0 0 0;">
+        Periksa kembali data sebelum menyimpan ke database.
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+      <span
+        style="background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; padding: 0.35rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.85rem;">
+        ✓ {{ preview.rows|length }} anak siap disimpan
+      </span>
+      {% if preview.problems %}
+      <span
+        style="background: #feebc8; color: #7b341e; border: 1px solid #fbd38d; padding: 0.35rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.85rem;">
+        ⚠️ {{ preview.problems|length }} catatan / dilewati
+      </span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if preview.problems %}
+  <div
+    style="background: #fffaf0; border: 1px solid #feebc8; color: #7b341e; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; font-size: 0.9rem; line-height: 1.5;">
+    <strong style="display: block; margin-bottom: 0.5rem; color: #9c4221;">
+      ⚠️ Catatan Validasi & Baris Dilewati:
+    </strong>
+    <ul style="margin: 0; padding-left: 1.25rem;">
+      {% for problem in preview.problems %}
+      <li>{{ problem }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if preview.rows %}
+  <div style="overflow-x: auto; margin-bottom: 1.5rem;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+      <thead>
+        <tr style="background: #f7fafc; border-bottom: 2px solid #e2e8f0; text-align: left;">
+          <th style="padding: 0.6rem 0.75rem; width: 50px; text-align: center;">No</th>
+          <th style="padding: 0.6rem 0.75rem; width: 110px; text-align: center;">No. Absen</th>
+          <th style="padding: 0.6rem 0.75rem;">Nama Anak</th>
+          <th style="padding: 0.6rem 0.75rem; width: 170px; text-align: center;">Paket</th>
+          {% for field in custom_fields %}
+          <th style="padding: 0.6rem 0.75rem;">{{ field.field_label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in preview.rows %}
+        <tr style="border-bottom: 1px solid #edf2f7;">
+          <td style="padding: 0.6rem 0.75rem; text-align: center; color: #718096;">{{ loop.index }}</td>
+          <td style="padding: 0.6rem 0.75rem; text-align: center; font-weight: 600;">
+            {% if row.nomor_urut %}{{ row.nomor_urut }}{% else %}<span style="color: #a0aec0;">-</span>{% endif %}
+          </td>
+          <td style="padding: 0.6rem 0.75rem; font-weight: 600; color: #2d3748;">
+            {{ row.nama }}
+          </td>
+          <td style="padding: 0.6rem 0.75rem; text-align: center;">
+            {% if row.paket == 'B' %}
+            <span
+              style="background: #e6fffa; color: #234e52; border: 1px solid #b2f5ea; padding: 0.2rem 0.65rem; border-radius: 999px; font-weight: 700; font-size: 0.8rem; display: inline-block;">
+              Paket B (Full Day)
+            </span>
+            {% else %}
+            <span
+              style="background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: 0.2rem 0.65rem; border-radius: 999px; font-weight: 700; font-size: 0.8rem; display: inline-block;">
+              Paket A (Half Day)
+            </span>
+            {% endif %}
+          </td>
+          {% for field in custom_fields %}
+          <td style="padding: 0.6rem 0.75rem; color: #4a5568;">
+            {{ row.extra_data.get(field.field_key, '-') or '-' }}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+    <form method="post" action="/admin/import/konfirmasi" style="margin: 0;">
+      <input type="hidden" name="token" value="{{ token }}">
+      <button type="submit" class="btn-primary"
+        style="margin: 0; min-height: 44px; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem;">
+        ✅ Konfirmasi & Simpan {{ preview.rows|length }} Anak
+      </button>
+    </form>
+    <a href="/admin/import" role="button" class="btn-secondary"
+      style="margin: 0; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 1.25rem;">
+      Batal / Unggah Ulang
+    </a>
+  </div>
+  {% else %}
+  <div
+    style="background: #edf2f7; color: #4a5568; border-radius: 8px; padding: 1.25rem; text-align: center; margin-top: 0.5rem;">
+    <p style="margin: 0 0 0.5rem 0; font-weight: 600;">Tidak ada baris data anak baru yang valid untuk disimpan.</p>
+    <p style="margin: 0; font-size: 0.9rem; color: #718096;">Silakan periksa kembali isi berkas Excel Anda dan pastikan
+      nama anak belum terdaftar di sistem.</p>
+  </div>
+  {% endif %}
+</div>
 {% endif %}
 {% endblock %}
